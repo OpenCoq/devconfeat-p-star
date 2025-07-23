@@ -1,0 +1,31 @@
+{
+    "orchestrator_basic": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "orchestrator": {
+                "orchestrationType": "docker-compose",
+                "enableVisualization": true
+            }
+        }
+    },
+    "orchestrator_k8s": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "orchestrator": {
+                "orchestrationType": "kubernetes",
+                "maxNestingDepth": "5",
+                "enableAutoScaling": false
+            }
+        }
+    },
+    "orchestrator_minimal": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "orchestrator": {
+                "orchestrationType": "standalone",
+                "enableVisualization": false,
+                "enableAutoScaling": false
+            }
+        }
+    }
+}

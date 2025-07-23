@@ -190,13 +190,13 @@ fi
 
 case "$COMMUNICATION_MODE" in
     "shared-volume")
-        mkdir -p "/opt/membrane/communication/outbox" 2>/dev/null || {
+        if mkdir -p "/opt/membrane/communication/outbox" 2>/dev/null; then
+            echo "$MESSAGE" > "/opt/membrane/communication/outbox/msg_${TARGET_MEMBRANE}_$(date +%s).json"
+        else
             echo "Warning: Cannot create outbox directory, using /tmp"
             mkdir -p "/tmp/membrane_outbox"
             echo "$MESSAGE" > "/tmp/membrane_outbox/msg_${TARGET_MEMBRANE}_$(date +%s).json"
-            return
-        }
-        echo "$MESSAGE" > "/opt/membrane/communication/outbox/msg_${TARGET_MEMBRANE}_$(date +%s).json"
+        fi
         ;;
     "network")
         # Placeholder for network communication

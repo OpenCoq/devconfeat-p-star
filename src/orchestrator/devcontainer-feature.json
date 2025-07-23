@@ -1,0 +1,36 @@
+{
+    "name": "P-System Membrane Orchestrator",
+    "id": "orchestrator", 
+    "version": "1.0.0",
+    "description": "Orchestrates nested membrane containers and manages P-system hierarchies with Docker Compose and Kubernetes support",
+    "options": {
+        "orchestrationType": {
+            "type": "string",
+            "enum": [
+                "docker-compose",
+                "kubernetes",
+                "standalone"
+            ],
+            "default": "docker-compose",
+            "description": "Container orchestration system to use"
+        },
+        "maxNestingDepth": {
+            "type": "string",
+            "default": "3",
+            "description": "Maximum depth for nested membrane hierarchies"
+        },
+        "enableVisualization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable web-based membrane hierarchy visualization"
+        },
+        "enableAutoScaling": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable automatic membrane division and scaling"
+        }
+    },
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/docker-in-docker"
+    ]
+}
