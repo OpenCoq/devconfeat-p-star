@@ -1,0 +1,41 @@
+{
+    "name": "P-System Membrane Computing",
+    "id": "membrane",
+    "version": "1.0.0",
+    "description": "Enables dev containers to function as P-system membranes with hierarchical nesting, evolution rules, and communication capabilities",
+    "options": {
+        "membraneId": {
+            "type": "string",
+            "default": "membrane-1",
+            "description": "Unique identifier for this membrane"
+        },
+        "parentMembrane": {
+            "type": "string",
+            "default": "",
+            "description": "Parent membrane ID for nested hierarchies (empty for root membrane)"
+        },
+        "enableScheme": {
+            "type": "boolean",
+            "default": true,
+            "description": "Install Scheme interpreter for hypergraph representation"
+        },
+        "enableMonitoring": {
+            "type": "boolean", 
+            "default": true,
+            "description": "Enable event monitoring and rule execution engine"
+        },
+        "communicationMode": {
+            "type": "string",
+            "enum": [
+                "shared-volume",
+                "network",
+                "ipc"
+            ],
+            "default": "shared-volume",
+            "description": "Communication method between membranes"
+        }
+    },
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "membrane_basic": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "membrane": {
+                "membraneId": "test-membrane",
+                "enableScheme": true,
+                "enableMonitoring": true
+            }
+        }
+    },
+    "membrane_nested": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "membrane": {
+                "membraneId": "child-membrane",
+                "parentMembrane": "root-membrane",
+                "communicationMode": "shared-volume"
+            }
+        }
+    },
+    "membrane_minimal": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "membrane": {
+                "membraneId": "minimal-membrane",
+                "enableScheme": false,
+                "enableMonitoring": false
+            }
+        }
+    }
+}
