@@ -1,0 +1,66 @@
+{
+  "name": "Cognitive P-System Architecture",
+  "description": "Multi-layer cognitive architecture with nested P-system membranes",
+  "membranes": [
+    {
+      "id": "cognitive-root",
+      "parent": null,
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "perception",
+      "parent": "cognitive-root",
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "cognition",
+      "parent": "cognitive-root",
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "action",
+      "parent": "cognitive-root",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "perception-visual",
+      "parent": "perception",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "perception-audio",
+      "parent": "perception",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "cognition-reasoning",
+      "parent": "cognition",
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "cognition-memory",
+      "parent": "cognition",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "action-motor",
+      "parent": "action",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "action-output",
+      "parent": "action",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    }
+  ]
+}
