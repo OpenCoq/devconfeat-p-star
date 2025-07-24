@@ -1,53 +1,277 @@
-# Dev Container Features: Self Authoring Template
+# P9ML Neural Membrane Computing Platform
 
-> This repo provides a starting point and example for creating your own custom [dev container Features](https://containers.dev/implementors/features/), hosted for free on GitHub Container Registry.  The example in this repository follows the [dev container Feature distribution specification](https://containers.dev/implementors/features-distribution/).  
->
-> To provide feedback to the specification, please leave a comment [on spec issue #70](https://github.com/devcontainers/spec/issues/70). For more broad feedback regarding dev container Features, please see [spec issue #61](https://github.com/devcontainers/spec/issues/61).
+> A comprehensive Plan9 P9ML Membrane Computing System with neural network integration, implementing hierarchical cognitive architectures through dev container features.
 
-## Example Contents
+This repository provides advanced P-System membrane computing capabilities with integrated neural tensor processing, quantization-aware training, and cognitive grammar kernels. Built on the [dev container Feature distribution specification](https://containers.dev/implementors/features-distribution/) for seamless development environment integration.
 
-This repository contains a _collection_ of two Features - `hello` and `color`. These Features serve as simple feature implementations.  Each sub-section below shows a sample `devcontainer.json` alongside example usage of the Feature.
+## System Architecture
 
-### `hello`
+The P9ML Neural Membrane Computing Platform implements a cognitive architecture through hierarchical membrane computing with integrated neural processing capabilities.
 
-Running `hello` inside the built container will print the greeting provided to it via its `greeting` option.
+```mermaid
+graph TB
+    subgraph "Cognitive Architecture"
+        subgraph "Neural Layer"
+            NN[Neural Networks]
+            QAT[Quantization-Aware Training]
+            GGML[GGML Tensor Operations]
+        end
+        
+        subgraph "Membrane Layer"
+            RM[Root Membrane]
+            PM[Perception Membranes]
+            CM[Cognition Membranes]
+            AM[Action Membranes]
+        end
+        
+        subgraph "Grammar Kernel"
+            HG[Hypergraph Structure]
+            CV[Cognitive Vocabulary]
+            ER[Evolution Rules]
+        end
+        
+        subgraph "Orchestration Layer"
+            NS[Namespace Registry]
+            DC[Docker Compose]
+            K8S[Kubernetes]
+            VIS[Visualization]
+        end
+    end
+    
+    NN -.->|tensor mapping| RM
+    QAT -.->|quantized weights| PM
+    GGML -.->|ggml_p9ml_membrane| CM
+    
+    RM --> PM
+    RM --> CM
+    RM --> AM
+    
+    PM --> HG
+    CM --> CV
+    AM --> ER
+    
+    NS --> DC
+    NS --> K8S
+    DC --> VIS
+    K8S --> VIS
+```
+
+## Core Features
+
+This repository contains a collection of integrated Features for building cognitive P-System architectures:
+
+### `membrane` - P-System Membrane Computing
+
+Implements hierarchical membrane computing with neural tensor integration.
 
 ```jsonc
 {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-        "ghcr.io/devcontainers/feature-starter/hello:1": {
-            "greeting": "Hello"
+        "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+            "membraneId": "cognitive-root",
+            "enableScheme": true,
+            "enableMonitoring": true,
+            "enableP9ML": true
         }
     }
 }
 ```
 
 ```bash
-$ hello
-
-Hello, user.
+$ membrane status
+Membrane: cognitive-root [ACTIVE]
+P9ML Integration: ENABLED
+Neural Tensors: 42 active
+Evolution Rules: 15 loaded
 ```
 
-### `color`
+### `orchestrator` - Membrane Hierarchy Management
 
-Running `color` inside the built container will print your favorite color to standard out.
+Orchestrates complex membrane hierarchies with neural network deployment.
 
 ```jsonc
 {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-        "ghcr.io/devcontainers/feature-starter/color:1": {
-            "favorite": "green"
+        "ghcr.io/opencoq/devconfeat-p-star/orchestrator:1": {
+            "orchestrationType": "kubernetes",
+            "enableP9ML": true,
+            "maxNestingDepth": "5"
         }
     }
 }
 ```
 
 ```bash
-$ color
+$ orchestrator deploy cognitive-architecture.json
+Deploying P9ML Neural Membrane System...
+✓ Root membrane: cognitive-root
+✓ Perception layer: visual-processing, audio-processing  
+✓ Cognition layer: reasoning, memory
+✓ Neural tensors: synchronized
+```
 
-my favorite color is green
+## Technical Architecture
+
+### P9ML Neural-Membrane Integration
+
+The system implements a novel integration between Plan9 P9ML neural processing and P-System membrane computing:
+
+```mermaid
+flowchart LR
+    subgraph "P9ML Neural Layer"
+        direction TB
+        WT[Weight Tensors]
+        QAT[Quantization-Aware Training]
+        VOCAB[Dynamic Vocabulary]
+    end
+    
+    subgraph "Membrane Computing Layer"
+        direction TB
+        MEM[Membrane Objects]
+        RULES[Evolution Rules]
+        COMM[Communication]
+    end
+    
+    subgraph "Cognitive Grammar Kernel"
+        direction TB
+        HYPER[Hypergraph Structure]
+        LEX[Cognitive Lexicon]
+        META[Meta-Learning]
+    end
+    
+    WT -->|ggml_p9ml_membrane| MEM
+    QAT -->|weight attachment| RULES
+    VOCAB -->|tensor shapes| COMM
+    
+    MEM -->|state vectors| HYPER
+    RULES -->|transformation patterns| LEX
+    COMM -->|message flow| META
+    
+    HYPER -->|recursive feedback| META
+    LEX -->|agentic adaptation| WT
+    META -->|namespace orchestration| QAT
+```
+
+### Namespace and Orchestration
+
+The distributed computing architecture enables hierarchical cognitive processing:
+
+```mermaid
+graph TD
+    subgraph "Global Namespace"
+        GNS[ggml_p9ml_namespace]
+        REG[Registry Service]
+        ORCH[Orchestration Engine]
+    end
+    
+    subgraph "Membrane Hierarchy"
+        ROOT[Root Membrane]
+        
+        subgraph "Perception Layer"
+            VISUAL[Visual Processing]
+            AUDIO[Audio Processing]
+            SENSORY[Sensory Integration]
+        end
+        
+        subgraph "Cognition Layer"
+            REASON[Reasoning Engine]
+            MEMORY[Memory System]
+            PLANNING[Planning Module]
+        end
+        
+        subgraph "Action Layer"
+            MOTOR[Motor Control]
+            SPEECH[Speech Generation]
+            BEHAVIOR[Behavior Selection]
+        end
+    end
+    
+    GNS --> ROOT
+    REG --> ROOT
+    ORCH --> ROOT
+    
+    ROOT --> VISUAL
+    ROOT --> AUDIO
+    ROOT --> SENSORY
+    
+    VISUAL --> REASON
+    AUDIO --> MEMORY
+    SENSORY --> PLANNING
+    
+    REASON --> MOTOR
+    MEMORY --> SPEECH
+    PLANNING --> BEHAVIOR
+    
+    MOTOR -.->|feedback| VISUAL
+    SPEECH -.->|feedback| AUDIO
+    BEHAVIOR -.->|feedback| SENSORY
+```
+
+## Implementation Components
+
+### Feature Structure
+
+The repository follows the dev container Feature specification with enhanced cognitive computing capabilities:
+
+```
+src/
+├── membrane/                    # Core P-System membrane computing
+│   ├── devcontainer-feature.json
+│   ├── install.sh              # Installation with P9ML integration
+│   └── README.md
+├── orchestrator/               # Membrane hierarchy orchestration  
+│   ├── devcontainer-feature.json
+│   ├── install.sh             # Kubernetes/Docker Compose deployment
+│   └── README.md
+├── hello/                     # Basic greeting (template example)
+└── color/                     # Color preference (template example)
+
+examples/
+└── cognitive-architecture/    # Complete cognitive system examples
+    ├── membrane-hierarchy.json
+    ├── evolution-rules/
+    └── scheme-examples/
+```
+
+### Core Libraries and Infrastructure
+
+Each Feature provides comprehensive cognitive computing infrastructure:
+
+#### Membrane Feature (`/opt/membrane/`)
+```
+/opt/membrane/
+├── config/
+│   └── membrane.json          # P9ML-enhanced configuration
+├── p9ml/                      # P9ML neural integration
+│   ├── ggml_p9ml_membrane.so  # Core neural-membrane wrapper
+│   ├── namespace_registry.py   # Distributed namespace management
+│   └── cognitive_kernel.scm    # Hypergraph cognitive processing
+├── rules/
+│   └── evolution.sh           # QAT-enhanced evolution rules
+├── communication/
+│   ├── tensor_exchange.py     # Neural tensor communication
+│   ├── vocab_encoder.c        # Dynamic vocabulary encoding
+│   └── meta_learning.py       # Recursive adaptation
+└── visualization/
+    └── membrane_neural_viz.html # Interactive architecture viewer
+```
+
+#### Orchestrator Feature (`/opt/orchestrator/`)
+```
+/opt/orchestrator/
+├── templates/
+│   ├── cognitive-architecture.yml    # Multi-layer cognitive systems
+│   ├── neural-pipeline.yml          # Processing pipeline templates
+│   └── distributed-membrane.yml     # Distributed computing setups
+├── generators/
+│   ├── k8s_neural_manifest.py      # Kubernetes neural deployment
+│   ├── compose_hierarchy.py        # Docker Compose generation
+│   └── visualization.py            # Mermaid diagram generation
+└── deployment/
+    ├── helm_charts/                 # Kubernetes Helm charts
+    └── scaling/                     # Auto-scaling configurations
 ```
 
 ## Repo and Feature Structure

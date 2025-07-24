@@ -1,8 +1,8 @@
 {
-    "name": "P-System Membrane Computing",
+    "name": "P9ML Neural Membrane Computing",
     "id": "membrane",
     "version": "1.0.0",
-    "description": "Enables dev containers to function as P-system membranes with hierarchical nesting, evolution rules, and communication capabilities",
+    "description": "P-system membranes with P9ML neural integration, tensor processing, and cognitive grammar kernel",
     "options": {
         "membraneId": {
             "type": "string",
@@ -24,15 +24,41 @@
             "default": true,
             "description": "Enable event monitoring and rule execution engine"
         },
+        "enableP9ML": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable P9ML neural tensor integration with ggml"
+        },
+        "enableQuantization": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable data-free quantization-aware training for neural membranes"
+        },
+        "tensorDimensions": {
+            "type": "string",
+            "default": "40",
+            "description": "Default tensor dimensions for membrane state representation"
+        },
+        "cognitiveKernel": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable cognitive grammar kernel with hypergraph processing"
+        },
         "communicationMode": {
             "type": "string",
             "enum": [
                 "shared-volume",
                 "network",
-                "ipc"
+                "ipc",
+                "tensor-exchange"
             ],
-            "default": "shared-volume",
+            "default": "tensor-exchange",
             "description": "Communication method between membranes"
+        },
+        "namespaceRegistry": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable distributed namespace registration for global state management"
         }
     },
     "installsAfter": [
