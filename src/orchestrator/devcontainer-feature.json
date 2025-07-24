@@ -1,15 +1,16 @@
 {
-    "name": "P-System Membrane Orchestrator",
+    "name": "P9ML Neural Membrane Orchestrator",
     "id": "orchestrator", 
     "version": "1.0.0",
-    "description": "Orchestrates nested membrane containers and manages P-system hierarchies with Docker Compose and Kubernetes support",
+    "description": "Orchestrates P9ML neural membrane hierarchies with Docker Compose, Kubernetes, and distributed neural computing support",
     "options": {
         "orchestrationType": {
             "type": "string",
             "enum": [
                 "docker-compose",
                 "kubernetes",
-                "standalone"
+                "standalone",
+                "neural-cluster"
             ],
             "default": "docker-compose",
             "description": "Container orchestration system to use"
@@ -28,6 +29,26 @@
             "type": "boolean",
             "default": false,
             "description": "Enable automatic membrane division and scaling"
+        },
+        "enableP9ML": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable P9ML neural integration for orchestrated membranes"
+        },
+        "neuralClusterSize": {
+            "type": "string",
+            "default": "3",
+            "description": "Default size for neural membrane clusters"
+        },
+        "tensorDimensions": {
+            "type": "string",
+            "default": "40",
+            "description": "Default tensor dimensions for neural membranes"
+        },
+        "distributedNamespace": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable distributed namespace registry across orchestrated membranes"
         }
     },
     "installsAfter": [
