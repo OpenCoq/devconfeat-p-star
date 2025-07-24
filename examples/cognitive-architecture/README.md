@@ -13,6 +13,59 @@ This example implements the cognitive flowchart specified in the original issue:
 
 ## Architecture Overview
 
+This example demonstrates a complete cognitive architecture using P-System membrane computing:
+
+```mermaid
+graph TB
+    subgraph "Cognitive Root Membrane"
+        CR[Cognitive Controller]
+    end
+    
+    subgraph "Perception Membrane"
+        PM[Perception Manager]
+        VP[Visual Processing Worker]
+        AP[Audio Processing Worker]
+    end
+    
+    subgraph "Cognition Membrane"
+        CM[Cognition Manager]
+        RE[Reasoning Engine]
+        MM[Memory Manager]
+    end
+    
+    subgraph "Action Membrane"
+        AM[Action Manager]
+        MC[Motor Control]
+        OG[Output Generator]
+    end
+    
+    CR --> PM
+    CR --> CM
+    CR --> AM
+    
+    PM --> VP
+    PM --> AP
+    
+    CM --> RE
+    CM --> MM
+    
+    AM --> MC
+    AM --> OG
+    
+    VP -.->|Visual Data| CM
+    AP -.->|Audio Data| CM
+    RE -.->|Decisions| AM
+    MM -.->|Context| RE
+    MC -.->|Commands| OG
+    
+    style CR fill:#e1f5fe
+    style PM fill:#f3e5f5
+    style CM fill:#e8f5e8
+    style AM fill:#fff3e0
+```
+
+### Membrane Hierarchy Structure
+
 ```
 Root Membrane (Cognitive Controller)
 ├── Perception Membrane
@@ -24,6 +77,42 @@ Root Membrane (Cognitive Controller)
 └── Action Membrane
     ├── Motor Control
     └── Output Generator
+```
+
+### Information Processing Flow
+
+```mermaid
+sequenceDiagram
+    participant Env as Environment
+    participant VP as Visual Processor
+    participant AP as Audio Processor
+    participant PM as Perception Manager
+    participant RE as Reasoning Engine
+    participant MM as Memory Manager
+    participant AM as Action Manager
+    participant MC as Motor Control
+    participant OG as Output Generator
+    
+    Env->>VP: Visual Input
+    Env->>AP: Audio Input
+    
+    VP->>PM: Processed Visual Data
+    AP->>PM: Processed Audio Data
+    
+    PM->>RE: Sensory Information
+    RE->>MM: Query Memory
+    MM->>RE: Retrieved Context
+    
+    RE->>AM: Decision/Action Plan
+    AM->>MC: Motor Commands
+    AM->>OG: Output Commands
+    
+    MC->>Env: Physical Actions
+    OG->>Env: Generated Output
+    
+    Note over PM,RE: Cross-membrane<br/>communication
+    Note over RE,MM: Memory-assisted<br/>reasoning
+    Note over AM,OG: Coordinated<br/>action execution
 ```
 
 ## Files in this Example
@@ -96,6 +185,62 @@ Each membrane in the hierarchy is configured with specific capabilities:
 - **Scaling**: Can be dynamically scaled based on load
 
 ## Evolution Rules Examples
+
+## Evolution Rules Examples
+
+The cognitive system includes several pre-configured evolution rules that demonstrate P-System behavior:
+
+### Rule Execution Flow
+
+```mermaid
+flowchart TD
+    subgraph "Event Sources"
+        IMG[Image File Detected]
+        AUD[Audio File Detected]
+        CMD[User Command]
+        TMR[Timer Event]
+    end
+    
+    subgraph "Rule Processing"
+        RUL1[Visual Processing Rule]
+        RUL2[Audio Processing Rule]
+        RUL3[Command Processing Rule]
+        RUL4[Heartbeat Rule]
+    end
+    
+    subgraph "Actions"
+        ACT1[Process Image]
+        ACT2[Process Audio]
+        ACT3[Execute Command]
+        ACT4[Status Update]
+    end
+    
+    subgraph "Communication"
+        MSG1[Send to Cognition]
+        MSG2[Send to Action]
+        MSG3[Log Activity]
+    end
+    
+    IMG --> RUL1
+    AUD --> RUL2
+    CMD --> RUL3
+    TMR --> RUL4
+    
+    RUL1 --> ACT1
+    RUL2 --> ACT2
+    RUL3 --> ACT3
+    RUL4 --> ACT4
+    
+    ACT1 --> MSG1
+    ACT2 --> MSG1
+    ACT3 --> MSG2
+    ACT4 --> MSG3
+    
+    style RUL1 fill:#e3f2fd
+    style RUL2 fill:#f3e5f5
+    style RUL3 fill:#e8f5e8
+    style RUL4 fill:#fff3e0
+```
 
 The system includes several pre-configured evolution rules:
 
