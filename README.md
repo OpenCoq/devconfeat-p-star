@@ -1,188 +1,404 @@
-# Dev Container Features: Self Authoring Template
+# P-System Membrane Computing Dev Container Features
 
-> This repo provides a starting point and example for creating your own custom [dev container Features](https://containers.dev/implementors/features/), hosted for free on GitHub Container Registry.  The example in this repository follows the [dev container Feature distribution specification](https://containers.dev/implementors/features-distribution/).  
->
-> To provide feedback to the specification, please leave a comment [on spec issue #70](https://github.com/devcontainers/spec/issues/70). For more broad feedback regarding dev container Features, please see [spec issue #61](https://github.com/devcontainers/spec/issues/61).
+A revolutionary implementation of **P-System Membrane Computing** as Dev Container Features, enabling containerized environments to function as computational membranes with hierarchical nesting, evolution rules, and inter-membrane communication capabilities.
 
-## Example Contents
+## 🧬 What is P-System Membrane Computing?
 
-This repository contains a _collection_ of two Features - `hello` and `color`. These Features serve as simple feature implementations.  Each sub-section below shows a sample `devcontainer.json` alongside example usage of the Feature.
+P-Systems (Membrane Systems) are computational models inspired by the structure and functioning of biological cells. This repository implements P-System concepts using modern container technology:
 
-### `hello`
+```mermaid
+graph TB
+    subgraph "P-System Architecture"
+        CM[Cognitive Membrane]
+        PM[Perception Membrane] 
+        AM[Action Membrane]
+        
+        subgraph "Nested Workers"
+            VW[Visual Worker]
+            AW[Audio Worker]
+            MW[Motor Worker]
+            OW[Output Worker]
+        end
+        
+        CM --> PM
+        CM --> AM
+        PM --> VW
+        PM --> AW
+        AM --> MW
+        AM --> OW
+        
+        VW -.->|Messages| CM
+        AW -.->|Messages| CM
+        MW -.->|Commands| OW
+    end
+```
 
-Running `hello` inside the built container will print the greeting provided to it via its `greeting` option.
+## 🚀 Core Features
+
+This repository provides four specialized dev container features:
+
+### 🧠 `membrane` - P-System Membrane Computing Core
+
+Transforms a dev container into a P-System membrane with evolution rules, communication capabilities, and hierarchical nesting support.
 
 ```jsonc
 {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-        "ghcr.io/devcontainers/feature-starter/hello:1": {
-            "greeting": "Hello"
+        "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+            "membraneId": "cognitive-root",
+            "enableScheme": true,
+            "enableMonitoring": true,
+            "communicationMode": "shared-volume"
         }
     }
 }
 ```
 
-```bash
-$ hello
+**Key Capabilities:**
+- 🔄 Evolution rule execution engine
+- 📡 Inter-membrane communication protocols  
+- 🐣 Scheme-based hypergraph representation
+- 📊 Real-time monitoring and event logging
+- 🌳 Hierarchical membrane nesting
 
+### 🎼 `orchestrator` - Membrane Hierarchy Management
+
+Orchestrates complex P-System hierarchies using Docker Compose or Kubernetes, with visualization and auto-scaling capabilities.
+
+```jsonc
+{
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/opencoq/devconfeat-p-star/orchestrator:1": {
+            "orchestrationType": "docker-compose",
+            "maxNestingDepth": "5",
+            "enableVisualization": true,
+            "enableAutoScaling": true
+        }
+    }
+}
+```
+
+**Key Capabilities:**
+- 🐳 Docker Compose and Kubernetes deployment
+- 📈 Auto-scaling based on membrane load
+- 🎨 Web-based hierarchy visualization
+- ⚙️ Configuration generation and management
+
+### 🎨 `color` & 👋 `hello` - Example Features
+
+Simple demonstration features showing basic dev container feature patterns.
+
+```bash
+# Test color feature
+$ color
+my favorite color is green
+
+# Test hello feature  
+$ hello
 Hello, user.
 ```
 
-### `color`
+## 🏗️ Architecture Overview
 
-Running `color` inside the built container will print your favorite color to standard out.
+P-System Membrane Computing architecture maps naturally to containerized environments:
 
-```jsonc
+```mermaid
+graph LR
+    subgraph "Container ≅ Membrane"
+        C1[Dev Container]
+        C2[Nested Container]
+        C3[Worker Container]
+    end
+    
+    subgraph "Communication ≅ Evolution Rules"
+        M1[Shared Volumes]
+        M2[Network Messages]  
+        M3[IPC Channels]
+    end
+    
+    subgraph "Hierarchy ≅ Nesting"
+        H1[Parent Membrane]
+        H2[Child Membrane]
+        H3[Grandchild Membrane]
+    end
+    
+    C1 --> H1
+    C2 --> H2
+    C3 --> H3
+    
+    H1 --> H2
+    H2 --> H3
+    
+    H1 -.->|Messages| M1
+    H2 -.->|Events| M2
+    H3 -.->|State| M3
+```
+
+### 🧭 System Architecture
+
+```mermaid
+architecture-beta
+    group cloud(logos:aws-cloudformation)[Cloud Infrastructure]
+    group container(logos:docker-icon)[Container Layer]
+    group membrane(logos:atom)[Membrane Layer] 
+    group application(logos:visual-studio-code)[Application Layer]
+    
+    service db(logos:postgresql)[Database] in cloud
+    service registry(logos:docker-icon)[Container Registry] in cloud
+    
+    service orchestrator(logos:kubernetes)[Orchestrator] in container
+    service runtime(logos:docker-icon)[Container Runtime] in container
+    
+    service membrane_core(logos:atom)[Membrane Core] in membrane
+    service evolution(logos:gear)[Evolution Engine] in membrane
+    service communication(logos:signal)[Communication] in membrane
+    
+    service scheme(logos:scheme)[Scheme Interpreter] in application
+    service monitoring(logos:grafana)[Monitoring] in application
+    service visualization(logos:d3)[Visualization] in application
+    
+    orchestrator:R --> L:runtime
+    runtime:T --> B:membrane_core
+    membrane_core:R --> L:evolution
+    evolution:R --> L:communication
+    membrane_core:T --> B:scheme
+    communication:T --> B:monitoring
+    monitoring:R --> L:visualization
+    
+    db:R --> L:orchestrator
+    registry:B --> T:runtime
+```
+
+## 🚀 Quick Start
+
+### 1. Basic Membrane Setup
+
+Create a simple P-System membrane:
+
+```bash
+# Create devcontainer.json
 {
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     "features": {
-        "ghcr.io/devcontainers/feature-starter/color:1": {
-            "favorite": "green"
+        "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+            "membraneId": "my-membrane",
+            "enableScheme": true
         }
     }
 }
+
+# Open in VS Code
+code .
+# Container will build with membrane capabilities
 ```
+
+### 2. Test Membrane Functions
 
 ```bash
-$ color
+# Check membrane status
+membrane status
 
-my favorite color is green
+# Send test message
+membrane send target-membrane "test message"
+
+# View communication logs
+membrane log
+
+# Execute evolution rule
+./opt/membrane/rules/evolution.sh file_created /tmp/data.json
 ```
 
-## Repo and Feature Structure
-
-Similar to the [`devcontainers/features`](https://github.com/devcontainers/features) repo, this repository has a `src` folder.  Each Feature has its own sub-folder, containing at least a `devcontainer-feature.json` and an entrypoint script `install.sh`. 
-
-```
-├── src
-│   ├── hello
-│   │   ├── devcontainer-feature.json
-│   │   └── install.sh
-│   ├── color
-│   │   ├── devcontainer-feature.json
-│   │   └── install.sh
-|   ├── ...
-│   │   ├── devcontainer-feature.json
-│   │   └── install.sh
-...
-```
-
-An [implementing tool](https://containers.dev/supporting#tools) will composite [the documented dev container properties](https://containers.dev/implementors/features/#devcontainer-feature-json-properties) from the feature's `devcontainer-feature.json` file, and execute in the `install.sh` entrypoint script in the container during build time.  Implementing tools are also free to process attributes under the `customizations` property as desired.
-
-### Options
-
-All available options for a Feature should be declared in the `devcontainer-feature.json`.  The syntax for the `options` property can be found in the [devcontainer Feature json properties reference](https://containers.dev/implementors/features/#devcontainer-feature-json-properties).
-
-For example, the `color` feature provides an enum of three possible options (`red`, `gold`, `green`).  If no option is provided in a user's `devcontainer.json`, the value is set to "red".
-
-```jsonc
-{
-    // ...
-    "options": {
-        "favorite": {
-            "type": "string",
-            "enum": [
-                "red",
-                "gold",
-                "green"
-            ],
-            "default": "red",
-            "description": "Choose your favorite color."
-        }
-    }
-}
-```
-
-Options are exported as Feature-scoped environment variables.  The option name is captialized and sanitized according to [option resolution](https://containers.dev/implementors/features/#option-resolution).
+### 3. Deploy Hierarchical System
 
 ```bash
-#!/bin/bash
+# Generate hierarchy configuration
+orchestrator generate examples/cognitive-architecture/membrane-hierarchy.json
 
-echo "Activating feature 'color'"
-echo "The provided favorite color is: ${FAVORITE}"
+# Deploy complete system
+orchestrator deploy docker-compose.yml
 
-...
+# View visualization
+orchestrator visualize
+# Open http://localhost:8080
 ```
 
-## Distributing Features
+## 📊 Communication Flows
 
-### Versioning
+### Message Passing Between Membranes
 
-Features are individually versioned by the `version` attribute in a Feature's `devcontainer-feature.json`.  Features are versioned according to the semver specification. More details can be found in [the dev container Feature specification](https://containers.dev/implementors/features/#versioning).
-
-### Publishing
-
-> NOTE: The Distribution spec can be [found here](https://containers.dev/implementors/features-distribution/).  
->
-> While any registry [implementing the OCI Distribution spec](https://github.com/opencontainers/distribution-spec) can be used, this template will leverage GHCR (GitHub Container Registry) as the backing registry.
-
-Features are meant to be easily sharable units of dev container configuration and installation code.  
-
-This repo contains a **GitHub Action** [workflow](.github/workflows/release.yaml) that will publish each Feature to GHCR. 
-
-*Allow GitHub Actions to create and approve pull requests* should be enabled in the repository's `Settings > Actions > General > Workflow permissions` for auto generation of `src/<feature>/README.md` per Feature (which merges any existing `src/<feature>/NOTES.md`).
-
-By default, each Feature will be prefixed with the `<owner/<repo>` namespace.  For example, the two Features in this repository can be referenced in a `devcontainer.json` with:
-
-```
-ghcr.io/devcontainers/feature-starter/color:1
-ghcr.io/devcontainers/feature-starter/hello:1
+```mermaid
+sequenceDiagram
+    participant Root as Root Membrane
+    participant Perception as Perception Membrane  
+    participant Visual as Visual Worker
+    participant Cognition as Cognition Membrane
+    
+    Root->>Perception: Initialize processing
+    Perception->>Visual: Delegate visual task
+    Visual->>Visual: Process image data
+    Visual->>Perception: Return results
+    Perception->>Cognition: Send processed data
+    Cognition->>Root: Decision result
+    Root->>Perception: Update state
 ```
 
-The provided GitHub Action will also publish a third "metadata" package with just the namespace, eg: `ghcr.io/devcontainers/feature-starter`.  This contains information useful for tools aiding in Feature discovery.
+### Evolution Rule Execution
 
-'`devcontainers/feature-starter`' is known as the feature collection namespace.
+```mermaid
+flowchart TD
+    A[Event Trigger] --> B{Rule Match?}
+    B -->|Yes| C[Execute Rule]
+    B -->|No| D[Queue Event]
+    C --> E[Update State]
+    E --> F[Send Messages]
+    F --> G[Log Activity]
+    D --> H[Wait for Match]
+    H --> B
+    G --> I[Continue Monitoring]
+```
 
-### Marking Feature Public
-
-Note that by default, GHCR packages are marked as `private`.  To stay within the free tier, Features need to be marked as `public`.
-
-This can be done by navigating to the Feature's "package settings" page in GHCR, and setting the visibility to 'public`.  The URL may look something like:
+## 🔬 Feature Structure
 
 ```
-https://github.com/users/<owner>/packages/container/<repo>%2F<featureName>/settings
+devconfeat-p-star/
+├── src/
+│   ├── membrane/              # Core P-System membrane
+│   │   ├── devcontainer-feature.json
+│   │   ├── install.sh
+│   │   └── README.md
+│   ├── orchestrator/          # Hierarchy orchestration  
+│   │   ├── devcontainer-feature.json
+│   │   ├── install.sh
+│   │   └── README.md
+│   ├── color/                 # Example feature
+│   └── hello/                 # Example feature
+├── examples/
+│   └── cognitive-architecture/ # Complete P-System example
+├── test/                      # Feature tests
+├── TENSOR_MAPPING.md          # ggml integration guide
+└── ARCHITECTURE.md            # Detailed technical docs
 ```
 
-<img width="669" alt="image" src="https://user-images.githubusercontent.com/23246594/185244705-232cf86a-bd05-43cb-9c25-07b45b3f4b04.png">
+## 🧠 Cognitive Architecture Integration
 
-### Adding Features to the Index
+This system is designed for integration with AI/ML frameworks:
 
-If you'd like your Features to appear in our [public index](https://containers.dev/features) so that other community members can find them, you can do the following:
+### Tensor Mapping for ggml
 
-* Go to [github.com/devcontainers/devcontainers.github.io](https://github.com/devcontainers/devcontainers.github.io)
-     * This is the GitHub repo backing the [containers.dev](https://containers.dev/) spec site
-* Open a PR to modify the [collection-index.yml](https://github.com/devcontainers/devcontainers.github.io/blob/gh-pages/_data/collection-index.yml) file
-
-This index is from where [supporting tools](https://containers.dev/supporting) like [VS Code Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) and [GitHub Codespaces](https://github.com/features/codespaces) surface Features for their dev container creation UI.
-
-#### Using private Features in Codespaces
-
-For any Features hosted in GHCR that are kept private, the `GITHUB_TOKEN` access token in your environment will need to have `package:read` and `contents:read` for the associated repository.
-
-Many implementing tools use a broadly scoped access token and will work automatically.  GitHub Codespaces uses repo-scoped tokens, and therefore you'll need to add the permissions in `devcontainer.json`
-
-An example `devcontainer.json` can be found below.
-
-```jsonc
-{
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-    "features": {
-     "ghcr.io/my-org/private-features/hello:1": {
-            "greeting": "Hello"
-        }
-    },
-    "customizations": {
-        "codespaces": {
-            "repositories": {
-                "my-org/private-features": {
-                    "permissions": {
-                        "packages": "read",
-                        "contents": "read"
-                    }
-                }
-            }
-        }
-    }
-}
+```mermaid
+graph TB
+    subgraph "Membrane State"
+        MS[Membrane State Vector]
+        CM[Communication Matrix]
+        ER[Evolution Rules]
+    end
+    
+    subgraph "Tensor Representation"
+        ST[State Tensor]
+        CT[Communication Tensor]
+        ET[Evolution Tensor]
+    end
+    
+    subgraph "Neural Processing"
+        NN[Neural Network]
+        CK[Cognitive Kernel]
+        AI[AI Application]
+    end
+    
+    MS --> ST
+    CM --> CT
+    ER --> ET
+    
+    ST --> NN
+    CT --> NN
+    ET --> NN
+    
+    NN --> CK
+    CK --> AI
 ```
+
+See [TENSOR_MAPPING.md](TENSOR_MAPPING.md) for detailed tensor specifications.
+
+## 🚀 Real-World Applications
+
+- **🤖 Cognitive AI Systems**: Hierarchical reasoning with membrane-based attention
+- **🔄 Distributed Computing**: Container orchestration with P-System semantics
+- **🧪 Computational Biology**: Modeling cellular processes in containers
+- **🎮 Game AI**: Multi-level decision making with nested behaviors
+- **🏭 Industrial Automation**: Hierarchical control systems with evolution rules
+
+## 📚 Examples
+
+### Basic Cognitive Architecture
+
+See the complete [cognitive-architecture example](examples/cognitive-architecture/) for:
+- Multi-level membrane hierarchy
+- Inter-membrane communication
+- Evolution rule implementation
+- Visualization dashboard
+- Integration patterns
+
+### Command Reference
+
+```bash
+# Membrane commands
+membrane status                 # Show membrane state
+membrane send <target> <msg>    # Send message
+membrane log                    # View communication logs
+membrane scheme                 # Enter Scheme REPL
+
+# Orchestrator commands  
+orchestrator generate <json>    # Generate configuration
+orchestrator deploy <config>    # Deploy hierarchy
+orchestrator visualize          # Start visualization
+orchestrator status             # Show system status
+```
+
+## 🤝 Contributing
+
+We welcome contributions! This project implements cutting-edge computational theory in practical container environments.
+
+### Development Setup
+
+```bash
+# Clone repository
+git clone https://github.com/OpenCoq/devconfeat-p-star.git
+cd devconfeat-p-star
+
+# Test features
+./test/run-tests.sh
+
+# Contribute new features or improvements
+```
+
+### Adding New Features
+
+1. Create feature directory in `src/`
+2. Add `devcontainer-feature.json` and `install.sh`
+3. Write tests in `test/`
+4. Update documentation
+
+## 📖 Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed technical architecture
+- **[TENSOR_MAPPING.md](TENSOR_MAPPING.md)** - ggml integration guide
+- **[examples/](examples/)** - Complete usage examples
+- **[Dev Container Spec](https://containers.dev/)** - Container feature specification
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🔗 References
+
+- [P-System Theory](https://en.wikipedia.org/wiki/P_system)
+- [Membrane Computing](http://ppage.psystems.eu/)
+- [Dev Containers](https://containers.dev/)
+- [OpenCog Framework](https://opencog.org/)
+- [GGML Tensor Library](https://github.com/ggerganov/ggml)
+
+---
+
+*Transform your development environment into a computational membrane with P-System capabilities. Experience the future of distributed, hierarchical computing.*
