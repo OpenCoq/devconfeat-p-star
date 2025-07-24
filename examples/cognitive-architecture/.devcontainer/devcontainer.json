@@ -1,0 +1,43 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "name": "P-System Cognitive Architecture",
+    "features": {
+        "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+            "membraneId": "cognitive-root",
+            "parentMembrane": "",
+            "enableScheme": true,
+            "enableMonitoring": true,
+            "communicationMode": "shared-volume"
+        },
+        "ghcr.io/opencoq/devconfeat-p-star/orchestrator:1": {
+            "orchestrationType": "docker-compose",
+            "maxNestingDepth": "4",
+            "enableVisualization": true,
+            "enableAutoScaling": false
+        }
+    },
+    "postCreateCommand": [
+        "echo 'P-System Membrane Computing Environment Ready'",
+        "echo 'Use: orchestrator generate membrane-hierarchy.json to get started'",
+        "echo 'Use: membrane status to check membrane configuration'",
+        "echo 'Use: orchestrator visualize to start dashboard'"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode-remote.remote-containers",
+                "redhat.vscode-yaml"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            }
+        }
+    },
+    "forwardPorts": [8080],
+    "portsAttributes": {
+        "8080": {
+            "label": "Membrane Visualization Dashboard",
+            "onAutoForward": "openBrowser"
+        }
+    }
+}
