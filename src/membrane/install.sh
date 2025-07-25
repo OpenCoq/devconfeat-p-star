@@ -9,14 +9,15 @@ PARENT_MEMBRANE=${PARENTMEMBRANE:-}
 ENABLE_SCHEME=${ENABLESCHEME:-true}
 ENABLE_MONITORING=${ENABLEMONITORING:-true}
 COMMUNICATION_MODE=${COMMUNICATIONMODE:-shared-volume}
-ENABLE_NAMESPACE=${ENABLENAMESPACE:-true}
+ENABLE_REGISTRY=${ENABLEREGISTRY:-true}
 REGISTRY_URL=${REGISTRYURL:-http://localhost:8765}
+NAMESPACE_ID=${NAMESPACEID:-default}
 AUTO_REGISTER=${AUTOREGISTER:-true}
 
 echo "Configuring membrane: $MEMBRANE_ID"
 echo "Parent membrane: ${PARENT_MEMBRANE:-'(root)'}"
 echo "Communication mode: $COMMUNICATION_MODE"
-echo "Namespace enabled: $ENABLE_NAMESPACE"
+echo "Registry enabled: $ENABLE_REGISTRY"
 echo "Registry URL: $REGISTRY_URL"
 
 # Create membrane directory structure
@@ -62,7 +63,7 @@ EOF
 fi
 
 # Install namespace registry and client
-if [ "$ENABLE_NAMESPACE" = "true" ]; then
+if [ "$ENABLE_REGISTRY" = "true" ]; then
     echo "Installing namespace registry components..."
     # Copy the Python files from the same directory as this script
     SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
@@ -87,7 +88,7 @@ if [ "$ENABLE_NAMESPACE" = "true" ]; then
     # Set environment variable for registry URL
     echo "export MEMBRANE_REGISTRY_URL=\"$REGISTRY_URL\"" >> /etc/environment
 else
-    echo "Namespace functionality disabled"
+    echo "Registry functionality disabled"
 fi
 
 # Install Scheme interpreter if enabled
@@ -165,12 +166,15 @@ cat > /opt/membrane/config/membrane.json << EOF
   "features": {
     "scheme_enabled": $ENABLE_SCHEME,
     "monitoring_enabled": $ENABLE_MONITORING,
-    "namespace_enabled": $ENABLE_NAMESPACE
+    "registry_enabled": $ENABLE_REGISTRY
   },
-  "namespace": {
-    "registry_url": "$REGISTRY_URL",
+  "registry": {
+    "enabled": $ENABLE_REGISTRY,
+    "url": "$REGISTRY_URL",
+    "namespace_id": "$NAMESPACE_ID",
     "auto_register": $AUTO_REGISTER,
-    "auto_heartbeat": true
+    "auto_heartbeat": true,
+    "registered": false
   }
 }
 EOF
@@ -343,6 +347,104 @@ update_membrane_state() {
         echo "State update requires jq - update not performed"
     fi
 }
+
+# Registry integration functions
+is_registry_enabled() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.enabled' /opt/membrane/config/membrane.json 2>/dev/null | grep -q "true"
+    else
+        grep -q '"enabled": true' /opt/membrane/config/membrane.json 2>/dev/null
+    fi
+}
+
+get_registry_url() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.url' /opt/membrane/config/membrane.json 2>/dev/null || echo "http://localhost:8500"
+    else
+        grep '"url"' /opt/membrane/config/membrane.json 2>/dev/null | cut -d'"' -f4 || echo "http://localhost:8500"
+    fi
+}
+
+get_namespace_id() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.namespace_id' /opt/membrane/config/membrane.json 2>/dev/null || echo "default"
+    else
+        grep '"namespace_id"' /opt/membrane/config/membrane.json 2>/dev/null | cut -d'"' -f4 || echo "default"
+    fi
+}
+
+register_with_registry() {
+    if ! is_registry_enabled; then
+        return 0
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local namespace_id=$(get_namespace_id)
+    local membrane_id=$(get_membrane_id)
+    local parent_membrane=$(get_parent_membrane)
+    local host=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
+    
+    local registration_data="{
+    \"namespace_id\": \"$namespace_id\",
+    \"membrane_id\": \"$membrane_id\",
+    \"host\": \"$host\",
+    \"parent_membrane\": $(if [ "$parent_membrane" = "null" ]; then echo "null"; else echo "\"$parent_membrane\""; fi),
+    \"capabilities\": [\"p-system\", \"membrane-computing\"],
+    \"metadata\": {
+        \"started_at\": \"$(date -Iseconds)\",
+        \"version\": \"1.0.0\"
+    }
+}"
+    
+    if command -v curl >/dev/null 2>&1; then
+        local response=$(curl -s -X POST "$registry_url/api/membranes/register" \
+                        -H "Content-Type: application/json" \
+                        -d "$registration_data" 2>/dev/null)
+        
+        if echo "$response" | grep -q "registered"; then
+            log_event "registry_registration" "success"
+            update_membrane_state "registry.registered" "true"
+            return 0
+        else
+            log_event "registry_registration" "failed: $response"
+            return 1
+        fi
+    else
+        log_event "registry_registration" "failed: curl not available"
+        return 1
+    fi
+}
+
+send_heartbeat() {
+    if ! is_registry_enabled; then
+        return 0
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local membrane_id=$(get_membrane_id)
+    
+    if command -v curl >/dev/null 2>&1; then
+        curl -s -X POST "$registry_url/api/membranes/$membrane_id/heartbeat" >/dev/null 2>&1
+        log_event "registry_heartbeat" "sent"
+    fi
+}
+
+discover_membranes() {
+    if ! is_registry_enabled; then
+        echo "Registry not enabled"
+        return 1
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local namespace_id=$(get_namespace_id)
+    
+    if command -v curl >/dev/null 2>&1; then
+        curl -s "$registry_url/api/membranes/discover?namespace_id=$namespace_id" 2>/dev/null
+    else
+        echo "curl not available for discovery"
+        return 1
+    fi
+}
 EOF
 
 # Create namespace-aware monitoring service if enabled
@@ -359,13 +461,33 @@ echo "Starting membrane monitoring service for $(get_membrane_id)"
 auto_register_namespace() {
     local config_file="/opt/membrane/config/membrane.json"
     if [ -f "$config_file" ] && command -v python3 >/dev/null 2>&1; then
-        local auto_register=$(jq -r '.namespace.auto_register // false' "$config_file" 2>/dev/null)
+        local auto_register=$(jq -r '.registry.auto_register // false' "$config_file" 2>/dev/null)
         if [ "$auto_register" = "true" ]; then
             echo "Auto-registering with namespace..."
-            python3 /usr/local/bin/membrane-namespace register 2>/dev/null || echo "Namespace registration failed"
+            if [ -f "/usr/local/bin/membrane-namespace" ]; then
+                python3 /usr/local/bin/membrane-namespace register 2>/dev/null || echo "Namespace registration failed"
+            else
+                register_with_registry
+            fi
         fi
     fi
 }
+
+# Register with registry if enabled
+register_with_registry
+
+# Auto-register with namespace
+auto_register_namespace
+
+# Start heartbeat task in background if registry is enabled
+if is_registry_enabled; then
+    (
+        while true; do
+            send_heartbeat
+            sleep 30  # Send heartbeat every 30 seconds
+        done
+    ) &
+fi
 
 # Monitor file system changes
 monitor_filesystem() {
@@ -456,21 +578,28 @@ case "${1:-}" in
         if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
             python3 /usr/local/bin/membrane-namespace register "$2"
         else
-            echo "Namespace functionality not available"
+            source /opt/membrane/lib/membrane-utils.sh
+            register_with_registry
         fi
+        ;;
+    "heartbeat")
+        source /opt/membrane/lib/membrane-utils.sh
+        send_heartbeat
         ;;
     "discover")
         if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
             python3 /usr/local/bin/membrane-namespace discover "$2"
         else
-            echo "Namespace functionality not available"
+            source /opt/membrane/lib/membrane-utils.sh
+            echo "Discovering membranes in namespace:"
+            discover_membranes | jq . 2>/dev/null || discover_membranes
         fi
         ;;
     "list")
         if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
             python3 /usr/local/bin/membrane-namespace list
         else
-            echo "Namespace functionality not available"
+            echo "Namespace list functionality not available"
         fi
         ;;
     "registry")
@@ -508,6 +637,7 @@ case "${1:-}" in
         echo "  scheme                    - Start Scheme interpreter"
         echo "  register [parent]         - Register with namespace"
         echo "  discover <membrane_id>    - Discover membrane by ID"
+        echo "  heartbeat                 - Send heartbeat to registry"
         echo "  list                      - List all membranes"
         echo "  registry start|status     - Control namespace registry"
         ;;

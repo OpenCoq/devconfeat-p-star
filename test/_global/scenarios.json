@@ -9,5 +9,31 @@
                 "greeting": "Greetings"
             }
         }
+    },
+    "membrane_with_registry": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "./registry": {
+                "registryMode": "standalone",
+                "enableServiceDiscovery": true
+            },
+            "./membrane": {
+                "membraneId": "test-membrane",
+                "enableRegistry": true,
+                "namespaceId": "test-namespace"
+            }
+        }
+    },
+    "orchestrator_with_registry": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "./registry": {
+                "registryMode": "standalone"
+            },
+            "./orchestrator": {
+                "orchestrationType": "docker-compose",
+                "enableVisualization": true
+            }
+        }
     }
 }

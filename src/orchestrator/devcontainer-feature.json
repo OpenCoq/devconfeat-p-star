@@ -29,10 +29,15 @@
             "default": false,
             "description": "Enable automatic membrane division and scaling"
         },
-        "enableNamespaceRegistry": {
+        "enableRegistry": {
             "type": "boolean",
             "default": true,
-            "description": "Deploy distributed namespace registry service"
+            "description": "Enable distributed registry integration for dynamic discovery"
+        },
+        "registryUrl": {
+            "type": "string",
+            "default": "http://localhost:8765",
+            "description": "URL of the distributed namespace registry"
         },
         "registryPort": {
             "type": "string",

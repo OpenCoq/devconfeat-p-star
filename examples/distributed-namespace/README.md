@@ -2,6 +2,15 @@
 
 This example demonstrates a complete distributed P-System membrane hierarchy with namespace registration capabilities.
 
+## 🎯 Overview
+
+The distributed namespace registration system enables:
+- **Dynamic Discovery**: Membranes can find each other without static configuration
+- **Service Registration**: Automatic registration with health monitoring  
+- **Namespace Isolation**: Logical separation of membrane groups
+- **Fault Tolerance**: Stale resource cleanup and heartbeat monitoring
+- **Hierarchical Communication**: Parent-child relationships maintained in the namespace
+
 ## Architecture
 
 The example creates a multi-level membrane hierarchy:
@@ -24,18 +33,34 @@ namespace-registry (central registry service)
 4. **Hierarchical Communication**: Parent-child relationships maintained in the namespace
 5. **Load Distribution**: Multiple visual workers for parallel processing
 
-## Configuration
+## 🚀 Quick Start
 
-The system is configured through `distributed-hierarchy.json`:
+### 1. Registry-Enabled Environment
 
-- **Namespace Registry**: Dedicated container running the registry service
-- **Membrane Hierarchy**: 6 membranes in a 3-level hierarchy
-- **Communication Mode**: Shared volume with namespace resolution
-- **Monitoring**: Enabled on all membranes for observability
+```json
+{
+  "name": "P-System with Distributed Registry",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/opencoq/devconfeat-p-star/registry:1": {
+      "registryMode": "standalone",
+      "enableServiceDiscovery": true,
+      "enableWebUI": true
+    },
+    "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+      "membraneId": "cognitive-root",
+      "enableRegistry": true,
+      "namespaceId": "cognitive-system"
+    },
+    "ghcr.io/opencoq/devconfeat-p-star/orchestrator:1": {
+      "enableRegistry": true,
+      "enableVisualization": true
+    }
+  }
+}
+```
 
-## Usage
-
-### 1. Deploy the System
+### 2. Deploy the System
 
 ```bash
 # Generate Docker Compose configuration
@@ -45,124 +70,126 @@ orchestrator generate examples/distributed-namespace/distributed-hierarchy.json 
 orchestrator deploy docker-compose.yml
 ```
 
-### 2. Interact with Membranes
+### 3. Start the System
 
 ```bash
-# Access the cognitive root membrane
-docker exec -it membrane-cognitive-root bash
+# 1. Start the registry service
+registry start
 
-# List all registered membranes
-membrane list
+# 2. Create a namespace for our cognitive system
+registry create-namespace "cognitive-system" "AI cognitive architecture"
 
-# Discover a specific membrane
-membrane discover visual-worker-1
+# 3. Register the current membrane
+membrane register
 
-# Send a message to a worker
-membrane send visual-worker-1 "Process image: /data/image.jpg"
+# 4. Check registration status
+membrane status
+
+# 5. Discover other membranes in the namespace
+membrane discover
 ```
 
-### 3. Monitor the System
+### 4. Add More Membranes
+
+Create additional containers with different membrane IDs:
+
+```json
+{
+  "features": {
+    "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+      "membraneId": "perception-processor",
+      "parentMembrane": "cognitive-root",
+      "enableRegistry": true,
+      "namespaceId": "cognitive-system"
+    }
+  }
+}
+```
+
+```json
+{
+  "features": {
+    "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+      "membraneId": "visual-worker",
+      "parentMembrane": "perception-processor",
+      "enableRegistry": true,
+      "namespaceId": "cognitive-system"
+    }
+  }
+}
+```
+
+### 5. Interact with the System
 
 ```bash
-# Check namespace registry status
-curl http://localhost:8765/status
+# Check all registered membranes
+membrane discover
+
+# Send a message to a specific membrane
+membrane send visual-worker "Process image data from camera 1"
 
 # View membrane hierarchy
-orchestrator visualize
-# Open http://localhost:8080 in browser
+membrane status
+
+# Monitor activity logs
+membrane log
 ```
 
-### 4. Test Fault Tolerance
+## Configuration
+
+The system is configured through `distributed-hierarchy.json`:
+
+- **Namespace Registry**: Dedicated container running the registry service
+- **Membrane Hierarchy**: 6 membranes in a 3-level hierarchy
+- **Communication Mode**: Shared volume with namespace resolution
+- **Monitoring**: Enabled on all membranes for observability
+
+## Advanced Features
+
+### Registry Web Interface
+
+Access the registry's web interface at `http://localhost:8765` to:
+- View all registered membranes
+- Monitor health status
+- Visualize membrane hierarchy
+- Debug communication issues
+
+### Distributed Deployment
+
+Deploy across multiple hosts:
 
 ```bash
-# Stop a worker membrane
-docker stop membrane-visual-worker-2
+# Host 1: Registry + Root membrane
+docker-compose -f registry.yml up -d
 
-# List membranes (should show worker as unhealthy)
-membrane list
+# Host 2: Perception membranes
+docker-compose -f perception.yml up -d
 
-# Registry will automatically clean up after timeout
+# Host 3: Action membranes  
+docker-compose -f action.yml up -d
 ```
 
-## Key Benefits
+### Fault Tolerance
 
-1. **No Static Configuration**: Membranes discover each other dynamically
-2. **Fault Tolerance**: Failed membranes are automatically detected and cleaned up
-3. **Scalability**: Easy to add new membrane instances
-4. **Observability**: Central registry provides system-wide view
-5. **Flexibility**: Support for different communication modes
+The system handles:
+- **Registry Failures**: Membranes cache discovered information
+- **Membrane Failures**: Automatic cleanup of stale registrations
+- **Network Partitions**: Graceful degradation and reconnection
 
-## Advanced Usage
-
-### Adding New Membranes
+## Monitoring and Debugging
 
 ```bash
-# Start a new visual worker
-docker run -d --name membrane-visual-worker-3 \
-  --network membrane-net \
-  -v membrane-comm:/opt/membrane/communication \
-  -e MEMBRANE_ID=visual-worker-3 \
-  -e PARENT_MEMBRANE=perception \
-  -e MEMBRANE_REGISTRY_URL=http://namespace-registry:8765 \
-  membrane:latest
+# Check registry health
+curl http://localhost:8765/status
 
-# The new membrane will auto-register and be discoverable immediately
+# View all registered membranes
+curl http://localhost:8765/api/membranes
+
+# Monitor membrane events
+membrane log | grep registry
+
+# Debug communication
+membrane send --debug visual-worker "test message"
 ```
 
-### Cross-Container Communication
-
-```bash
-# From one container, send to another
-membrane send motor-worker "Execute movement: forward 10cm"
-
-# The message will be routed through the namespace registry
-# and delivered to the motor-worker's communication endpoint
-```
-
-### Health Monitoring
-
-```bash
-# Check which membranes are healthy
-curl http://localhost:8765/list | jq '.[] | select(.status == "active")'
-
-# View unhealthy membranes
-curl http://localhost:8765/list | jq '.[] | select(.status == "unhealthy")'
-```
-
-## Files
-
-- `distributed-hierarchy.json`: System configuration
-- `docker-compose.yml`: Generated deployment configuration (after running orchestrator generate)
-- `README.md`: This documentation
-
-## Troubleshooting
-
-### Registry Not Accessible
-```bash
-# Check if registry is running
-docker ps | grep namespace-registry
-
-# Check registry logs
-docker logs membrane-namespace-registry
-```
-
-### Membrane Registration Failures
-```bash
-# Check membrane logs
-docker logs membrane-cognitive-root
-
-# Verify network connectivity
-docker exec membrane-cognitive-root curl http://namespace-registry:8765/status
-```
-
-### Communication Issues
-```bash
-# List registered membranes
-membrane list
-
-# Test discovery
-membrane discover target-membrane-id
-
-# Check communication volumes
-docker volume ls | grep membrane
-```
+This example demonstrates how P-System membranes can form dynamic, distributed computing systems with automatic discovery and fault tolerance.

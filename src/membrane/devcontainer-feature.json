@@ -34,15 +34,20 @@
             "default": "shared-volume",
             "description": "Communication method between membranes"
         },
-        "enableNamespace": {
+        "enableRegistry": {
             "type": "boolean",
             "default": true,
-            "description": "Enable distributed namespace registration and discovery"
+            "description": "Enable distributed namespace registry integration"
         },
         "registryUrl": {
             "type": "string",
             "default": "http://localhost:8765",
-            "description": "URL of the namespace registry service"
+            "description": "URL of the distributed namespace registry service"
+        },
+        "namespaceId": {
+            "type": "string",
+            "default": "default",
+            "description": "Namespace for membrane registration"
         },
         "autoRegister": {
             "type": "boolean",
