@@ -335,20 +335,17 @@ register_with_registry() {
     local parent_membrane=$(get_parent_membrane)
     local host=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
     
-    local registration_data=$(cat << EOF
-{
-    "namespace_id": "$namespace_id",
-    "membrane_id": "$membrane_id",
-    "host": "$host",
-    "parent_membrane": $(if [ "$parent_membrane" = "null" ]; then echo "null"; else echo "\"$parent_membrane\""; fi),
-    "capabilities": ["p-system", "membrane-computing"],
-    "metadata": {
-        "started_at": "$(date -Iseconds)",
-        "version": "1.0.0"
+    local registration_data="{
+    \"namespace_id\": \"$namespace_id\",
+    \"membrane_id\": \"$membrane_id\",
+    \"host\": \"$host\",
+    \"parent_membrane\": $(if [ "$parent_membrane" = "null" ]; then echo "null"; else echo "\"$parent_membrane\""; fi),
+    \"capabilities\": [\"p-system\", \"membrane-computing\"],
+    \"metadata\": {
+        \"started_at\": \"$(date -Iseconds)\",
+        \"version\": \"1.0.0\"
     }
-}
-EOF
-    )
+}"
     
     if command -v curl >/dev/null 2>&1; then
         local response=$(curl -s -X POST "$registry_url/api/membranes/register" \

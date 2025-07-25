@@ -21,7 +21,7 @@ check "registry web ui" test -f "/opt/registry/web/index.html"
 
 # Start registry service in background
 registry start &
-sleep 5
+sleep 10  # Give more time for startup
 
 # Test basic health check
 check "registry health check" curl -f http://localhost:8500/health

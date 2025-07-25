@@ -1,0 +1,32 @@
+{
+  "name": "P-System Distributed Namespace Example",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "registry",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/opencoq/devconfeat-p-star/registry:1": {
+      "registryMode": "standalone",
+      "enableServiceDiscovery": true,
+      "enableWebUI": true
+    },
+    "ghcr.io/opencoq/devconfeat-p-star/membrane:1": {
+      "membraneId": "cognitive-root",
+      "enableRegistry": true,
+      "namespaceId": "cognitive-system"
+    },
+    "ghcr.io/opencoq/devconfeat-p-star/orchestrator:1": {
+      "enableRegistry": true,
+      "enableVisualization": true
+    }
+  },
+  "forwardPorts": [8500, 8080],
+  "postCreateCommand": "registry start && sleep 2 && registry create-namespace 'cognitive-system' 'AI cognitive architecture' && membrane register",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-json"
+      ]
+    }
+  }
+}

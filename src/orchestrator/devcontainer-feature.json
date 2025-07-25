@@ -28,6 +28,16 @@
             "type": "boolean",
             "default": false,
             "description": "Enable automatic membrane division and scaling"
+        },
+        "enableRegistry": {
+            "type": "boolean", 
+            "default": false,
+            "description": "Enable distributed registry integration for dynamic discovery"
+        },
+        "registryUrl": {
+            "type": "string",
+            "default": "http://localhost:8500", 
+            "description": "URL of the distributed namespace registry"
         }
     },
     "installsAfter": [

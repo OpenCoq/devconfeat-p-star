@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  registry:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    container_name: psystem-registry
+    environment:
+      - REGISTRY_MODE=standalone
+      - ENABLE_SERVICE_DISCOVERY=true
+      - ENABLE_WEB_UI=true
+    ports:
+      - "8500:8500"
+    volumes:
+      - registry-data:/opt/registry/data
+      - registry-logs:/opt/registry/logs
+    networks:
+      - psystem-net
+    command: ["registry", "start"]
+
+  cognitive-root:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    container_name: membrane-cognitive-root
+    environment:
+      - MEMBRANE_ID=cognitive-root
+      - ENABLE_REGISTRY=true
+      - REGISTRY_URL=http://registry:8500
+      - NAMESPACE_ID=cognitive-system
+    depends_on:
+      - registry
+    volumes:
+      - membrane-comm:/opt/membrane/communication
+      - cognitive-state:/opt/membrane/state
+    networks:
+      - psystem-net
+
+  perception-processor:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu  
+    container_name: membrane-perception
+    environment:
+      - MEMBRANE_ID=perception-processor
+      - PARENT_MEMBRANE=cognitive-root
+      - ENABLE_REGISTRY=true
+      - REGISTRY_URL=http://registry:8500
+      - NAMESPACE_ID=cognitive-system
+    depends_on:
+      - cognitive-root
+    volumes:
+      - membrane-comm:/opt/membrane/communication
+      - perception-state:/opt/membrane/state
+    networks:
+      - psystem-net
+
+  action-controller:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    container_name: membrane-action
+    environment:
+      - MEMBRANE_ID=action-controller
+      - PARENT_MEMBRANE=cognitive-root
+      - ENABLE_REGISTRY=true
+      - REGISTRY_URL=http://registry:8500
+      - NAMESPACE_ID=cognitive-system
+    depends_on:
+      - cognitive-root
+    volumes:
+      - membrane-comm:/opt/membrane/communication
+      - action-state:/opt/membrane/state
+    networks:
+      - psystem-net
+
+volumes:
+  registry-data:
+  registry-logs:
+  membrane-comm:
+  cognitive-state:
+  perception-state:
+  action-state:
+
+networks:
+  psystem-net:
+    driver: bridge
