@@ -8,10 +8,13 @@ ORCHESTRATION_TYPE=${ORCHESTRATIONTYPE:-docker-compose}
 MAX_NESTING_DEPTH=${MAXNESTINGDEPTH:-3}
 ENABLE_VISUALIZATION=${ENABLEVISUALIZATION:-true}
 ENABLE_AUTO_SCALING=${ENABLEAUTOSCALING:-false}
+ENABLE_NAMESPACE_REGISTRY=${ENABLENAMESPACEREGISTRY:-true}
+REGISTRY_PORT=${REGISTRYPORT:-8765}
 
 echo "Orchestration type: $ORCHESTRATION_TYPE"
 echo "Max nesting depth: $MAX_NESTING_DEPTH"
 echo "Visualization enabled: $ENABLE_VISUALIZATION"
+echo "Namespace registry enabled: $ENABLE_NAMESPACE_REGISTRY"
 
 # Create orchestrator directory structure  
 mkdir -p /opt/orchestrator
@@ -54,13 +57,32 @@ EOF
     fi
 fi
 
-# Create Docker Compose template for nested membranes
+# Create Docker Compose template for nested membranes with namespace support
 cat > /opt/orchestrator/templates/membrane-hierarchy.yml << 'EOF'
 version: '3.8'
 
 services:
-  root-membrane:
+  namespace-registry:
     build: 
+      context: .
+      dockerfile: Dockerfile.registry
+    environment:
+      - REGISTRY_ID=main-registry
+      - REGISTRY_PORT=8765
+    ports:
+      - "8765:8765"
+    volumes:
+      - registry-data:/opt/membrane/registry
+    networks:
+      - membrane-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  root-membrane:
+    build:
       context: .
       dockerfile: Dockerfile.membrane
     environment:
@@ -68,11 +90,16 @@ services:
       - PARENT_MEMBRANE=
       - ENABLE_SCHEME=true
       - ENABLE_MONITORING=true
+      - ENABLE_NAMESPACE=true
+      - REGISTRY_URL=http://namespace-registry:8765
     volumes:
       - membrane-comm:/opt/membrane/communication
       - membrane-state:/opt/membrane/state
     networks:
       - membrane-net
+    depends_on:
+      namespace-registry:
+        condition: service_healthy
     
   child-membrane-1:
     build:
@@ -83,13 +110,16 @@ services:
       - PARENT_MEMBRANE=root
       - ENABLE_SCHEME=true
       - ENABLE_MONITORING=true
+      - ENABLE_NAMESPACE=true
+      - REGISTRY_URL=http://namespace-registry:8765
     volumes:
       - membrane-comm:/opt/membrane/communication
       - membrane-state:/opt/membrane/state
     networks:
       - membrane-net
     depends_on:
-      - root-membrane
+      namespace-registry:
+        condition: service_healthy
 
   child-membrane-2:
     build:
@@ -100,17 +130,21 @@ services:
       - PARENT_MEMBRANE=root
       - ENABLE_SCHEME=true
       - ENABLE_MONITORING=true
+      - ENABLE_NAMESPACE=true
+      - REGISTRY_URL=http://namespace-registry:8765
     volumes:
       - membrane-comm:/opt/membrane/communication
       - membrane-state:/opt/membrane/state
     networks:
       - membrane-net
     depends_on:
-      - root-membrane
+      namespace-registry:
+        condition: service_healthy
 
 volumes:
   membrane-comm:
   membrane-state:
+  registry-data:
 
 networks:
   membrane-net:
@@ -132,7 +166,32 @@ WORKDIR /opt/membrane
 CMD ["membrane", "monitor", "start"]
 EOF
 
-# Create Kubernetes manifests
+# Create Dockerfile template for namespace registry
+cat > /opt/orchestrator/templates/Dockerfile.registry << 'EOF'
+FROM mcr.microsoft.com/devcontainers/base:ubuntu
+
+# Install Python and dependencies
+RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
+
+# Copy namespace registry
+COPY namespace-registry.py /usr/local/bin/membrane-registry
+RUN chmod +x /usr/local/bin/membrane-registry
+
+# Create registry directory
+RUN mkdir -p /opt/membrane/registry
+
+# Expose registry port
+EXPOSE 8765
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:8765/status || exit 1
+
+# Start registry
+CMD ["python3", "/usr/local/bin/membrane-registry", "--registry-id", "docker-registry", "--port", "8765"]
+EOF
+
+# Create Kubernetes manifests with namespace registry support
 cat > /opt/orchestrator/templates/k8s-membrane-namespace.yml << 'EOF'
 apiVersion: v1
 kind: Namespace
@@ -141,6 +200,82 @@ metadata:
   labels:
     name: membrane-system
     p-system: "true"
+EOF
+
+cat > /opt/orchestrator/templates/k8s-namespace-registry.yml << 'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: namespace-registry
+  namespace: membrane-system
+  labels:
+    app: namespace-registry
+    p-system: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: namespace-registry
+  template:
+    metadata:
+      labels:
+        app: namespace-registry
+        p-system: "true"
+    spec:
+      containers:
+      - name: registry
+        image: membrane-registry:latest
+        ports:
+        - containerPort: 8765
+        env:
+        - name: REGISTRY_ID
+          value: "k8s-registry"
+        - name: REGISTRY_PORT
+          value: "8765"
+        volumeMounts:
+        - name: registry-data
+          mountPath: /opt/membrane/registry
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 8765
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: 8765
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: registry-data
+        persistentVolumeClaim:
+          claimName: registry-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: namespace-registry-service
+  namespace: membrane-system
+spec:
+  selector:
+    app: namespace-registry
+  ports:
+  - port: 8765
+    targetPort: 8765
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: registry-data-pvc
+  namespace: membrane-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 EOF
 
 cat > /opt/orchestrator/templates/k8s-membrane-deployment.yml << 'EOF'
@@ -175,6 +310,10 @@ spec:
           value: "true"
         - name: ENABLE_MONITORING
           value: "true"
+        - name: ENABLE_NAMESPACE
+          value: "true"
+        - name: REGISTRY_URL
+          value: "http://namespace-registry-service:8765"
         volumeMounts:
         - name: membrane-comm
           mountPath: /opt/membrane/communication

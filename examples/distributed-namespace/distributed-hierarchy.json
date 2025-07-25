@@ -1,0 +1,59 @@
+{
+  "name": "Distributed P-System with Namespace Registry",
+  "description": "Complete distributed membrane hierarchy with namespace registration",
+  "membranes": [
+    {
+      "id": "namespace-registry",
+      "parent": null,
+      "enable_scheme": false,
+      "enable_monitoring": true,
+      "special_role": "namespace_registry"
+    },
+    {
+      "id": "cognitive-root",
+      "parent": null,
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "perception",
+      "parent": "cognitive-root",
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "action",
+      "parent": "cognitive-root",
+      "enable_scheme": true,
+      "enable_monitoring": true
+    },
+    {
+      "id": "visual-worker-1",
+      "parent": "perception",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "visual-worker-2",
+      "parent": "perception",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    },
+    {
+      "id": "motor-worker",
+      "parent": "action",
+      "enable_scheme": false,
+      "enable_monitoring": true
+    }
+  ],
+  "communication": {
+    "mode": "shared-volume",
+    "namespace_enabled": true,
+    "registry_url": "http://namespace-registry:8765"
+  },
+  "deployment": {
+    "platform": "docker-compose",
+    "auto_scale": false,
+    "visualization": true
+  }
+}
