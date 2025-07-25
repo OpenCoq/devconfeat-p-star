@@ -1,0 +1,27 @@
+{
+    "registry_basic": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "./registry": {}
+        }
+    },
+    "registry_with_ui": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "./registry": {
+                "enableWebUI": true,
+                "registryPort": "8500"
+            }
+        }
+    },
+    "registry_distributed": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "./registry": {
+                "registryMode": "distributed",
+                "enableServiceDiscovery": true,
+                "enableHealthChecking": true
+            }
+        }
+    }
+}

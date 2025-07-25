@@ -9,10 +9,15 @@ PARENT_MEMBRANE=${PARENTMEMBRANE:-}
 ENABLE_SCHEME=${ENABLESCHEME:-true}
 ENABLE_MONITORING=${ENABLEMONITORING:-true}
 COMMUNICATION_MODE=${COMMUNICATIONMODE:-shared-volume}
+ENABLE_REGISTRY=${ENABLEREGISTRY:-false}
+REGISTRY_URL=${REGISTRYURL:-http://localhost:8500}
+NAMESPACE_ID=${NAMESPACEID:-default}
 
 echo "Configuring membrane: $MEMBRANE_ID"
 echo "Parent membrane: ${PARENT_MEMBRANE:-'(root)'}"
 echo "Communication mode: $COMMUNICATION_MODE"
+echo "Registry enabled: $ENABLE_REGISTRY"
+echo "Registry URL: $REGISTRY_URL"
 
 # Create membrane directory structure
 mkdir -p /opt/membrane
@@ -122,7 +127,14 @@ cat > /opt/membrane/config/membrane.json << EOF
   "created_at": "$(date -Iseconds)",
   "features": {
     "scheme_enabled": $ENABLE_SCHEME,
-    "monitoring_enabled": $ENABLE_MONITORING
+    "monitoring_enabled": $ENABLE_MONITORING,
+    "registry_enabled": $ENABLE_REGISTRY
+  },
+  "registry": {
+    "enabled": $ENABLE_REGISTRY,
+    "url": "$REGISTRY_URL",
+    "namespace_id": "$NAMESPACE_ID",
+    "registered": false
   }
 }
 EOF
@@ -286,6 +298,107 @@ update_membrane_state() {
         echo "State update requires jq - update not performed"
     fi
 }
+
+# Registry integration functions
+is_registry_enabled() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.enabled' /opt/membrane/config/membrane.json 2>/dev/null | grep -q "true"
+    else
+        grep -q '"enabled": true' /opt/membrane/config/membrane.json 2>/dev/null
+    fi
+}
+
+get_registry_url() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.url' /opt/membrane/config/membrane.json 2>/dev/null || echo "http://localhost:8500"
+    else
+        grep '"url"' /opt/membrane/config/membrane.json 2>/dev/null | cut -d'"' -f4 || echo "http://localhost:8500"
+    fi
+}
+
+get_namespace_id() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -r '.registry.namespace_id' /opt/membrane/config/membrane.json 2>/dev/null || echo "default"
+    else
+        grep '"namespace_id"' /opt/membrane/config/membrane.json 2>/dev/null | cut -d'"' -f4 || echo "default"
+    fi
+}
+
+register_with_registry() {
+    if ! is_registry_enabled; then
+        return 0
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local namespace_id=$(get_namespace_id)
+    local membrane_id=$(get_membrane_id)
+    local parent_membrane=$(get_parent_membrane)
+    local host=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
+    
+    local registration_data=$(cat << EOF
+{
+    "namespace_id": "$namespace_id",
+    "membrane_id": "$membrane_id",
+    "host": "$host",
+    "parent_membrane": $(if [ "$parent_membrane" = "null" ]; then echo "null"; else echo "\"$parent_membrane\""; fi),
+    "capabilities": ["p-system", "membrane-computing"],
+    "metadata": {
+        "started_at": "$(date -Iseconds)",
+        "version": "1.0.0"
+    }
+}
+EOF
+    )
+    
+    if command -v curl >/dev/null 2>&1; then
+        local response=$(curl -s -X POST "$registry_url/api/membranes/register" \
+                        -H "Content-Type: application/json" \
+                        -d "$registration_data" 2>/dev/null)
+        
+        if echo "$response" | grep -q "registered"; then
+            log_event "registry_registration" "success"
+            update_membrane_state "registry.registered" "true"
+            return 0
+        else
+            log_event "registry_registration" "failed: $response"
+            return 1
+        fi
+    else
+        log_event "registry_registration" "failed: curl not available"
+        return 1
+    fi
+}
+
+send_heartbeat() {
+    if ! is_registry_enabled; then
+        return 0
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local membrane_id=$(get_membrane_id)
+    
+    if command -v curl >/dev/null 2>&1; then
+        curl -s -X POST "$registry_url/api/membranes/$membrane_id/heartbeat" >/dev/null 2>&1
+        log_event "registry_heartbeat" "sent"
+    fi
+}
+
+discover_membranes() {
+    if ! is_registry_enabled; then
+        echo "Registry not enabled"
+        return 1
+    fi
+    
+    local registry_url=$(get_registry_url)
+    local namespace_id=$(get_namespace_id)
+    
+    if command -v curl >/dev/null 2>&1; then
+        curl -s "$registry_url/api/membranes/discover?namespace_id=$namespace_id" 2>/dev/null
+    else
+        echo "curl not available for discovery"
+        return 1
+    fi
+}
 EOF
 
 # Create monitoring service if enabled
@@ -297,6 +410,19 @@ if [ "$ENABLE_MONITORING" = "true" ]; then
 source /opt/membrane/lib/membrane-utils.sh
 
 echo "Starting membrane monitoring service for $(get_membrane_id)"
+
+# Register with registry if enabled
+register_with_registry
+
+# Start heartbeat task in background if registry is enabled
+if is_registry_enabled; then
+    (
+        while true; do
+            send_heartbeat
+            sleep 30  # Send heartbeat every 30 seconds
+        done
+    ) &
+fi
 
 # Monitor file system changes
 monitor_filesystem() {
@@ -380,6 +506,19 @@ case "${1:-}" in
             echo "Scheme interpreter not available"
         fi
         ;;
+    "register")
+        source /opt/membrane/lib/membrane-utils.sh
+        register_with_registry
+        ;;
+    "heartbeat")
+        source /opt/membrane/lib/membrane-utils.sh
+        send_heartbeat
+        ;;
+    "discover")
+        source /opt/membrane/lib/membrane-utils.sh
+        echo "Discovering membranes in namespace:"
+        discover_membranes | jq . 2>/dev/null || discover_membranes
+        ;;
     *)
         echo "P-System Membrane CLI"
         echo "Commands:"
@@ -390,6 +529,11 @@ case "${1:-}" in
         echo "  rules                     - List evolution rules"
         echo "  monitor start             - Start monitoring service"
         echo "  scheme                    - Start Scheme interpreter"
+        echo ""
+        echo "Registry Commands:"
+        echo "  register                  - Register with distributed registry"
+        echo "  heartbeat                 - Send heartbeat to registry"
+        echo "  discover                  - Discover other membranes in namespace"
         ;;
 esac
 EOF
