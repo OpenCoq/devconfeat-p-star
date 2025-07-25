@@ -1,0 +1,41 @@
+{
+    "name": "P-System Distributed Namespace Registry",
+    "id": "registry",
+    "version": "1.0.0",
+    "description": "Distributed namespace registry for P-System membrane discovery and registration",
+    "options": {
+        "registryMode": {
+            "type": "string",
+            "enum": [
+                "standalone",
+                "distributed",
+                "etcd-backend"
+            ],
+            "default": "standalone",
+            "description": "Registry deployment mode"
+        },
+        "enableServiceDiscovery": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable service discovery capabilities"
+        },
+        "enableHealthChecking": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable health checking for registered services"
+        },
+        "registryPort": {
+            "type": "string",
+            "default": "8500",
+            "description": "Port for registry service API"
+        },
+        "enableWebUI": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable web-based registry management UI"
+        }
+    },
+    "installsAfter": [
+        "ghcr.io/devcontainers/features/common-utils"
+    ]
+}

@@ -8,10 +8,13 @@ ORCHESTRATION_TYPE=${ORCHESTRATIONTYPE:-docker-compose}
 MAX_NESTING_DEPTH=${MAXNESTINGDEPTH:-3}
 ENABLE_VISUALIZATION=${ENABLEVISUALIZATION:-true}
 ENABLE_AUTO_SCALING=${ENABLEAUTOSCALING:-false}
+ENABLE_REGISTRY=${ENABLEREGISTRY:-false}
+REGISTRY_URL=${REGISTRYURL:-http://localhost:8500}
 
 echo "Orchestration type: $ORCHESTRATION_TYPE"
 echo "Max nesting depth: $MAX_NESTING_DEPTH"
 echo "Visualization enabled: $ENABLE_VISUALIZATION"
+echo "Registry integration: $ENABLE_REGISTRY"
 
 # Create orchestrator directory structure  
 mkdir -p /opt/orchestrator
@@ -295,6 +298,208 @@ EOF
 
 chmod +x /opt/orchestrator/tools/membrane-compose.py
 
+# Create registry-aware orchestrator tool
+cat > /opt/orchestrator/tools/registry-orchestrator.py << 'EOF'
+#!/usr/bin/env python3
+"""
+P-System Registry-Aware Orchestrator
+Automatically discovers and orchestrates membranes from the distributed registry
+"""
+
+import json
+import requests
+import argparse
+import yaml
+from typing import Dict, List, Any
+
+class RegistryOrchestrator:
+    def __init__(self, registry_url: str = "http://localhost:8500"):
+        self.registry_url = registry_url.rstrip('/')
+        
+    def discover_membranes(self, namespace_id: str = None) -> List[Dict]:
+        """Discover registered membranes from registry"""
+        params = {}
+        if namespace_id:
+            params['namespace_id'] = namespace_id
+            
+        try:
+            response = requests.get(f"{self.registry_url}/api/membranes/discover", params=params)
+            response.raise_for_status()
+            return response.json()['membranes']
+        except requests.RequestException as e:
+            print(f"Failed to discover membranes: {e}")
+            return []
+    
+    def generate_dynamic_compose(self, namespace_id: str = None) -> Dict[str, Any]:
+        """Generate Docker Compose from discovered membranes"""
+        membranes = self.discover_membranes(namespace_id)
+        
+        if not membranes:
+            print("No membranes discovered from registry")
+            return {}
+            
+        compose = {
+            'version': '3.8',
+            'services': {},
+            'volumes': {
+                'membrane-comm': None,
+                'membrane-state': None
+            },
+            'networks': {
+                'membrane-net': {'driver': 'bridge'}
+            }
+        }
+        
+        for membrane in membranes:
+            if membrane['status'] != 'active':
+                continue
+                
+            service_name = f"membrane-{membrane['membrane_id']}"
+            compose['services'][service_name] = {
+                'image': 'membrane:latest',
+                'environment': [
+                    f"MEMBRANE_ID={membrane['membrane_id']}",
+                    f"PARENT_MEMBRANE={membrane['parent_membrane'] or ''}",
+                    f"REGISTRY_URL={self.registry_url}",
+                    f"NAMESPACE_ID={membrane['namespace_id']}",
+                    "ENABLE_REGISTRY=true"
+                ],
+                'volumes': [
+                    'membrane-comm:/opt/membrane/communication',
+                    'membrane-state:/opt/membrane/state'
+                ],
+                'networks': ['membrane-net'],
+                'labels': [
+                    f"membrane.id={membrane['membrane_id']}",
+                    f"membrane.namespace={membrane['namespace_id']}",
+                    "membrane.registry=true"
+                ]
+            }
+            
+            # Add dependency on parent if it exists
+            if membrane['parent_membrane']:
+                parent_service = f"membrane-{membrane['parent_membrane']}"
+                if parent_service in compose['services']:
+                    compose['services'][service_name]['depends_on'] = [parent_service]
+        
+        return compose
+    
+    def generate_kubernetes_manifests(self, namespace_id: str = None) -> List[Dict]:
+        """Generate Kubernetes manifests from discovered membranes"""
+        membranes = self.discover_membranes(namespace_id)
+        manifests = []
+        
+        # Add namespace
+        namespace_manifest = {
+            'apiVersion': 'v1',
+            'kind': 'Namespace',
+            'metadata': {
+                'name': f"membrane-{namespace_id or 'default'}",
+                'labels': {
+                    'membrane.registry': 'true',
+                    'membrane.namespace': namespace_id or 'default'
+                }
+            }
+        }
+        manifests.append(namespace_manifest)
+        
+        for membrane in membranes:
+            if membrane['status'] != 'active':
+                continue
+                
+            # Deployment manifest
+            deployment = {
+                'apiVersion': 'apps/v1',
+                'kind': 'Deployment',
+                'metadata': {
+                    'name': f"membrane-{membrane['membrane_id']}",
+                    'namespace': f"membrane-{namespace_id or 'default'}",
+                    'labels': {
+                        'membrane.id': membrane['membrane_id'],
+                        'membrane.registry': 'true'
+                    }
+                },
+                'spec': {
+                    'replicas': 1,
+                    'selector': {
+                        'matchLabels': {
+                            'membrane.id': membrane['membrane_id']
+                        }
+                    },
+                    'template': {
+                        'metadata': {
+                            'labels': {
+                                'membrane.id': membrane['membrane_id'],
+                                'membrane.registry': 'true'
+                            }
+                        },
+                        'spec': {
+                            'containers': [{
+                                'name': 'membrane',
+                                'image': 'membrane:latest',
+                                'env': [
+                                    {'name': 'MEMBRANE_ID', 'value': membrane['membrane_id']},
+                                    {'name': 'PARENT_MEMBRANE', 'value': membrane['parent_membrane'] or ''},
+                                    {'name': 'REGISTRY_URL', 'value': self.registry_url},
+                                    {'name': 'NAMESPACE_ID', 'value': membrane['namespace_id']},
+                                    {'name': 'ENABLE_REGISTRY', 'value': 'true'}
+                                ],
+                                'ports': [{'containerPort': 8080}]
+                            }]
+                        }
+                    }
+                }
+            }
+            manifests.append(deployment)
+            
+            # Service manifest
+            service = {
+                'apiVersion': 'v1',
+                'kind': 'Service',
+                'metadata': {
+                    'name': f"membrane-{membrane['membrane_id']}-service",
+                    'namespace': f"membrane-{namespace_id or 'default'}"
+                },
+                'spec': {
+                    'selector': {
+                        'membrane.id': membrane['membrane_id']
+                    },
+                    'ports': [{'port': 8080, 'targetPort': 8080}]
+                }
+            }
+            manifests.append(service)
+        
+        return manifests
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Registry-Aware P-System Orchestrator')
+    parser.add_argument('--registry-url', default='http://localhost:8500', help='Registry URL')
+    parser.add_argument('--namespace', help='Target namespace ID')
+    parser.add_argument('--output-format', choices=['compose', 'kubernetes'], default='compose')
+    parser.add_argument('--output', default='output.yml', help='Output file')
+    
+    args = parser.parse_args()
+    
+    orchestrator = RegistryOrchestrator(args.registry_url)
+    
+    if args.output_format == 'compose':
+        config = orchestrator.generate_dynamic_compose(args.namespace)
+        with open(args.output, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        print(f"Generated Docker Compose from registry: {args.output}")
+    
+    elif args.output_format == 'kubernetes':
+        manifests = orchestrator.generate_kubernetes_manifests(args.namespace)
+        with open(args.output, 'w') as f:
+            for i, manifest in enumerate(manifests):
+                if i > 0:
+                    f.write("---\n")
+                yaml.dump(manifest, f, default_flow_style=False, sort_keys=False)
+        print(f"Generated Kubernetes manifests from registry: {args.output}")
+EOF
+
+chmod +x /opt/orchestrator/tools/registry-orchestrator.py
+
 # Create example membrane hierarchy configuration
 cat > /opt/orchestrator/configs/simple-hierarchy.json << 'EOF'
 {
@@ -499,6 +704,40 @@ case "${1:-}" in
         echo "  orchestrator generate /opt/orchestrator/configs/simple-hierarchy.json"
         echo "  orchestrator deploy"
         ;;
+    "discover")
+        registry_url="${2:-http://localhost:8500}"
+        namespace="${3:-}"
+        echo "Discovering membranes from registry..."
+        if [ -n "$namespace" ]; then
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --namespace "$namespace" --output-format compose --output discovered-compose.yml
+        else
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --output-format compose --output discovered-compose.yml
+        fi
+        echo "Generated discovered-compose.yml from registry"
+        ;;
+    "deploy-from-registry")
+        registry_url="${2:-http://localhost:8500}"
+        namespace="${3:-}"
+        echo "Deploying membranes discovered from registry..."
+        if [ -n "$namespace" ]; then
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --namespace "$namespace" --output-format compose --output registry-compose.yml
+        else
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --output-format compose --output registry-compose.yml
+        fi
+        docker-compose -f registry-compose.yml up -d
+        ;;
+    "kubernetes-from-registry")
+        registry_url="${2:-http://localhost:8500}"
+        namespace="${3:-}"
+        output_file="${4:-registry-k8s.yml}"
+        echo "Generating Kubernetes manifests from registry..."
+        if [ -n "$namespace" ]; then
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --namespace "$namespace" --output-format kubernetes --output "$output_file"
+        else
+            python3 /opt/orchestrator/tools/registry-orchestrator.py --registry-url "$registry_url" --output-format kubernetes --output "$output_file"
+        fi
+        echo "Generated $output_file from registry"
+        ;;
     *)
         echo "P-System Membrane Orchestrator"
         echo "Commands:"
@@ -508,6 +747,11 @@ case "${1:-}" in
         echo "  status                      - Show orchestrator status"
         echo "  visualize                   - Start web visualization server"
         echo "  examples                    - List example configurations"
+        echo ""
+        echo "Registry Commands:"
+        echo "  discover [registry-url] [namespace]           - Discover membranes from registry"
+        echo "  deploy-from-registry [registry-url] [ns]      - Deploy discovered membranes"
+        echo "  kubernetes-from-registry [registry-url] [ns] [output] - Generate K8s manifests"
         ;;
 esac
 EOF
