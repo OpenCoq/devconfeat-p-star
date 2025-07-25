@@ -9,10 +9,15 @@ PARENT_MEMBRANE=${PARENTMEMBRANE:-}
 ENABLE_SCHEME=${ENABLESCHEME:-true}
 ENABLE_MONITORING=${ENABLEMONITORING:-true}
 COMMUNICATION_MODE=${COMMUNICATIONMODE:-shared-volume}
+ENABLE_NAMESPACE=${ENABLENAMESPACE:-true}
+REGISTRY_URL=${REGISTRYURL:-http://localhost:8765}
+AUTO_REGISTER=${AUTOREGISTER:-true}
 
 echo "Configuring membrane: $MEMBRANE_ID"
 echo "Parent membrane: ${PARENT_MEMBRANE:-'(root)'}"
 echo "Communication mode: $COMMUNICATION_MODE"
+echo "Namespace enabled: $ENABLE_NAMESPACE"
+echo "Registry URL: $REGISTRY_URL"
 
 # Create membrane directory structure
 mkdir -p /opt/membrane
@@ -24,7 +29,7 @@ mkdir -p /opt/membrane/logs
 
 # Install required system packages
 echo "Installing system packages..."
-if apt-get update && apt-get install -y inotify-tools jq curl; then
+if apt-get update && apt-get install -y inotify-tools jq curl python3; then
     echo "Successfully installed system packages"
 else
     echo "Warning: Failed to install some packages, using minimal setup"
@@ -46,6 +51,43 @@ sleep infinity
 EOF
         chmod +x /usr/local/bin/inotifywait
     fi
+    
+    if ! command -v python3 >/dev/null 2>&1; then
+        cat > /usr/local/bin/python3 << 'EOF'
+#!/bin/bash
+echo "Python 3 not available - namespace features disabled"
+EOF
+        chmod +x /usr/local/bin/python3
+    fi
+fi
+
+# Install namespace registry and client
+if [ "$ENABLE_NAMESPACE" = "true" ]; then
+    echo "Installing namespace registry components..."
+    # Copy the Python files from the same directory as this script
+    SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+    if [ -f "$SCRIPT_DIR/namespace-registry.py" ]; then
+        cp "$SCRIPT_DIR/namespace-registry.py" /usr/local/bin/membrane-registry
+        chmod +x /usr/local/bin/membrane-registry
+    fi
+    if [ -f "$SCRIPT_DIR/namespace-client.py" ]; then
+        cp "$SCRIPT_DIR/namespace-client.py" /usr/local/bin/membrane-namespace
+        chmod +x /usr/local/bin/membrane-namespace
+    fi
+
+    # Also create backup copies in membrane directory
+    mkdir -p /opt/membrane/namespace
+    if [ -f "$SCRIPT_DIR/namespace-registry.py" ]; then
+        cp "$SCRIPT_DIR/namespace-registry.py" /opt/membrane/namespace/
+    fi
+    if [ -f "$SCRIPT_DIR/namespace-client.py" ]; then
+        cp "$SCRIPT_DIR/namespace-client.py" /opt/membrane/namespace/
+    fi
+
+    # Set environment variable for registry URL
+    echo "export MEMBRANE_REGISTRY_URL=\"$REGISTRY_URL\"" >> /etc/environment
+else
+    echo "Namespace functionality disabled"
 fi
 
 # Install Scheme interpreter if enabled
@@ -122,7 +164,13 @@ cat > /opt/membrane/config/membrane.json << EOF
   "created_at": "$(date -Iseconds)",
   "features": {
     "scheme_enabled": $ENABLE_SCHEME,
-    "monitoring_enabled": $ENABLE_MONITORING
+    "monitoring_enabled": $ENABLE_MONITORING,
+    "namespace_enabled": $ENABLE_NAMESPACE
+  },
+  "namespace": {
+    "registry_url": "$REGISTRY_URL",
+    "auto_register": $AUTO_REGISTER,
+    "auto_heartbeat": true
   }
 }
 EOF
@@ -175,9 +223,10 @@ EOF
 chmod +x /opt/membrane/rules/evolution.sh
 
 # Create communication utilities
+# Create namespace-aware communication utilities
 cat > /opt/membrane/communication/send.sh << 'EOF'
 #!/bin/bash
-# Send message to another membrane
+# Send message to another membrane with namespace support
 
 TARGET_MEMBRANE="$1"
 MESSAGE="$2"
@@ -188,6 +237,14 @@ if [ -z "$TARGET_MEMBRANE" ] || [ -z "$MESSAGE" ]; then
     exit 1
 fi
 
+# Try to use namespace client if available
+if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
+    echo "Using namespace-aware communication..."
+    python3 /usr/local/bin/membrane-namespace send "$TARGET_MEMBRANE" "$MESSAGE"
+    exit $?
+fi
+
+# Fallback to original communication method
 case "$COMMUNICATION_MODE" in
     "shared-volume")
         if mkdir -p "/opt/membrane/communication/outbox" 2>/dev/null; then
@@ -288,15 +345,27 @@ update_membrane_state() {
 }
 EOF
 
-# Create monitoring service if enabled
+# Create namespace-aware monitoring service if enabled
 if [ "$ENABLE_MONITORING" = "true" ]; then
     cat > /opt/membrane/monitor.sh << 'EOF'
 #!/bin/bash
-# Membrane monitoring and event processing service
+# Membrane monitoring and event processing service with namespace support
 
 source /opt/membrane/lib/membrane-utils.sh
 
 echo "Starting membrane monitoring service for $(get_membrane_id)"
+
+# Auto-register with namespace if enabled
+auto_register_namespace() {
+    local config_file="/opt/membrane/config/membrane.json"
+    if [ -f "$config_file" ] && command -v python3 >/dev/null 2>&1; then
+        local auto_register=$(jq -r '.namespace.auto_register // false' "$config_file" 2>/dev/null)
+        if [ "$auto_register" = "true" ]; then
+            echo "Auto-registering with namespace..."
+            python3 /usr/local/bin/membrane-namespace register 2>/dev/null || echo "Namespace registration failed"
+        fi
+    fi
+}
 
 # Monitor file system changes
 monitor_filesystem() {
@@ -322,6 +391,9 @@ monitor_communication() {
     fi
 }
 
+# Auto-register with namespace
+auto_register_namespace
+
 # Start monitoring
 monitor_filesystem
 monitor_communication
@@ -336,7 +408,7 @@ fi
 # Create membrane command-line interface
 cat > /usr/local/bin/membrane << 'EOF'
 #!/bin/bash
-# Membrane P-System CLI
+# Membrane P-System CLI with namespace support
 
 case "${1:-}" in
     "status")
@@ -380,6 +452,50 @@ case "${1:-}" in
             echo "Scheme interpreter not available"
         fi
         ;;
+    "register")
+        if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
+            python3 /usr/local/bin/membrane-namespace register "$2"
+        else
+            echo "Namespace functionality not available"
+        fi
+        ;;
+    "discover")
+        if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
+            python3 /usr/local/bin/membrane-namespace discover "$2"
+        else
+            echo "Namespace functionality not available"
+        fi
+        ;;
+    "list")
+        if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
+            python3 /usr/local/bin/membrane-namespace list
+        else
+            echo "Namespace functionality not available"
+        fi
+        ;;
+    "registry")
+        case "$2" in
+            "start")
+                if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-registry" ]; then
+                    echo "Starting namespace registry..."
+                    python3 /usr/local/bin/membrane-registry --registry-id "$(hostname)-registry" &
+                    echo "Registry started in background"
+                else
+                    echo "Registry not available"
+                fi
+                ;;
+            "status")
+                if command -v curl >/dev/null 2>&1; then
+                    curl -s http://localhost:8765/status 2>/dev/null || echo "Registry not running"
+                else
+                    echo "curl not available to check registry status"
+                fi
+                ;;
+            *)
+                echo "Use: membrane registry start|status"
+                ;;
+        esac
+        ;;
     *)
         echo "P-System Membrane CLI"
         echo "Commands:"
@@ -390,6 +506,10 @@ case "${1:-}" in
         echo "  rules                     - List evolution rules"
         echo "  monitor start             - Start monitoring service"
         echo "  scheme                    - Start Scheme interpreter"
+        echo "  register [parent]         - Register with namespace"
+        echo "  discover <membrane_id>    - Discover membrane by ID"
+        echo "  list                      - List all membranes"
+        echo "  registry start|status     - Control namespace registry"
         ;;
 esac
 EOF

@@ -28,5 +28,16 @@
                 "enableMonitoring": false
             }
         }
+    },
+    "membrane_namespace": {
+        "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+        "features": {
+            "membrane": {
+                "membraneId": "namespace-test-membrane",
+                "enableNamespace": true,
+                "autoRegister": true,
+                "registryUrl": "http://localhost:8765"
+            }
+        }
     }
 }
