@@ -30,18 +30,18 @@
             "description": "Enable automatic membrane division and scaling"
         },
         "enableRegistry": {
-            "type": "boolean",
-            "default": true,
+            "type": "boolean", 
+            "default": false,
             "description": "Enable distributed registry integration for dynamic discovery"
         },
         "registryUrl": {
             "type": "string",
-            "default": "http://localhost:8765",
+            "default": "http://localhost:8500", 
             "description": "URL of the distributed namespace registry"
         },
         "registryPort": {
             "type": "string",
-            "default": "8765",
+            "default": "8500",
             "description": "Port for the namespace registry service"
         }
     },

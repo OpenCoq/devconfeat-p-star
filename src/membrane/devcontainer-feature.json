@@ -36,12 +36,12 @@
         },
         "enableRegistry": {
             "type": "boolean",
-            "default": true,
+            "default": false,
             "description": "Enable distributed namespace registry integration"
         },
         "registryUrl": {
-            "type": "string",
-            "default": "http://localhost:8765",
+            "type": "string", 
+            "default": "http://localhost:8500",
             "description": "URL of the distributed namespace registry service"
         },
         "namespaceId": {

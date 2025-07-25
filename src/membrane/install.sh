@@ -9,8 +9,8 @@ PARENT_MEMBRANE=${PARENTMEMBRANE:-}
 ENABLE_SCHEME=${ENABLESCHEME:-true}
 ENABLE_MONITORING=${ENABLEMONITORING:-true}
 COMMUNICATION_MODE=${COMMUNICATIONMODE:-shared-volume}
-ENABLE_REGISTRY=${ENABLEREGISTRY:-true}
-REGISTRY_URL=${REGISTRYURL:-http://localhost:8765}
+ENABLE_REGISTRY=${ENABLEREGISTRY:-false}
+REGISTRY_URL=${REGISTRYURL:-http://localhost:8500}
 NAMESPACE_ID=${NAMESPACEID:-default}
 AUTO_REGISTER=${AUTOREGISTER:-true}
 
@@ -172,8 +172,11 @@ cat > /opt/membrane/config/membrane.json << EOF
     "enabled": $ENABLE_REGISTRY,
     "url": "$REGISTRY_URL",
     "namespace_id": "$NAMESPACE_ID",
+<<<<<<< HEAD
     "auto_register": $AUTO_REGISTER,
     "auto_heartbeat": true,
+=======
+>>>>>>> 9a8db2077776de0387c60ae67b2079b05621c5db
     "registered": false
   }
 }
@@ -457,6 +460,7 @@ source /opt/membrane/lib/membrane-utils.sh
 
 echo "Starting membrane monitoring service for $(get_membrane_id)"
 
+<<<<<<< HEAD
 # Auto-register with namespace if enabled
 auto_register_namespace() {
     local config_file="/opt/membrane/config/membrane.json"
@@ -479,6 +483,11 @@ register_with_registry
 # Auto-register with namespace
 auto_register_namespace
 
+=======
+# Register with registry if enabled
+register_with_registry
+
+>>>>>>> 9a8db2077776de0387c60ae67b2079b05621c5db
 # Start heartbeat task in background if registry is enabled
 if is_registry_enabled; then
     (
@@ -575,18 +584,24 @@ case "${1:-}" in
         fi
         ;;
     "register")
+<<<<<<< HEAD
         if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
             python3 /usr/local/bin/membrane-namespace register "$2"
         else
             source /opt/membrane/lib/membrane-utils.sh
             register_with_registry
         fi
+=======
+        source /opt/membrane/lib/membrane-utils.sh
+        register_with_registry
+>>>>>>> 9a8db2077776de0387c60ae67b2079b05621c5db
         ;;
     "heartbeat")
         source /opt/membrane/lib/membrane-utils.sh
         send_heartbeat
         ;;
     "discover")
+<<<<<<< HEAD
         if command -v python3 >/dev/null 2>&1 && [ -f "/usr/local/bin/membrane-namespace" ]; then
             python3 /usr/local/bin/membrane-namespace discover "$2"
         else
@@ -624,6 +639,11 @@ case "${1:-}" in
                 echo "Use: membrane registry start|status"
                 ;;
         esac
+=======
+        source /opt/membrane/lib/membrane-utils.sh
+        echo "Discovering membranes in namespace:"
+        discover_membranes | jq . 2>/dev/null || discover_membranes
+>>>>>>> 9a8db2077776de0387c60ae67b2079b05621c5db
         ;;
     *)
         echo "P-System Membrane CLI"
@@ -635,11 +655,19 @@ case "${1:-}" in
         echo "  rules                     - List evolution rules"
         echo "  monitor start             - Start monitoring service"
         echo "  scheme                    - Start Scheme interpreter"
+<<<<<<< HEAD
         echo "  register [parent]         - Register with namespace"
         echo "  discover <membrane_id>    - Discover membrane by ID"
         echo "  heartbeat                 - Send heartbeat to registry"
         echo "  list                      - List all membranes"
         echo "  registry start|status     - Control namespace registry"
+=======
+        echo ""
+        echo "Registry Commands:"
+        echo "  register                  - Register with distributed registry"
+        echo "  heartbeat                 - Send heartbeat to registry"
+        echo "  discover                  - Discover other membranes in namespace"
+>>>>>>> 9a8db2077776de0387c60ae67b2079b05621c5db
         ;;
 esac
 EOF
