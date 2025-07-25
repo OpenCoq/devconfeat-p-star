@@ -2,7 +2,7 @@
     "name": "P-System Membrane Computing",
     "id": "membrane",
     "version": "1.0.0",
-    "description": "Enables dev containers to function as P-system membranes with hierarchical nesting, evolution rules, and communication capabilities",
+    "description": "Enables dev containers to function as P-system membranes with hierarchical nesting, evolution rules, and distributed namespace communication capabilities",
     "options": {
         "membraneId": {
             "type": "string",
@@ -48,6 +48,11 @@
             "type": "string",
             "default": "default",
             "description": "Namespace for membrane registration"
+        },
+        "autoRegister": {
+            "type": "boolean",
+            "default": true,
+            "description": "Automatically register membrane with namespace on startup"
         }
     },
     "installsAfter": [

@@ -2,7 +2,7 @@
     "name": "P-System Membrane Orchestrator",
     "id": "orchestrator", 
     "version": "1.0.0",
-    "description": "Orchestrates nested membrane containers and manages P-system hierarchies with Docker Compose and Kubernetes support",
+    "description": "Orchestrates nested membrane containers and manages P-system hierarchies with Docker Compose and Kubernetes support, including distributed namespace registry",
     "options": {
         "orchestrationType": {
             "type": "string",
@@ -38,6 +38,11 @@
             "type": "string",
             "default": "http://localhost:8500", 
             "description": "URL of the distributed namespace registry"
+        },
+        "registryPort": {
+            "type": "string",
+            "default": "8500",
+            "description": "Port for the namespace registry service"
         }
     },
     "installsAfter": [

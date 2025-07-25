@@ -39,7 +39,7 @@ This repository provides four specialized dev container features:
 
 ### 🧠 `membrane` - P-System Membrane Computing Core
 
-Transforms a dev container into a P-System membrane with evolution rules, communication capabilities, and hierarchical nesting support.
+Transforms a dev container into a P-System membrane with evolution rules, communication capabilities, hierarchical nesting support, and distributed namespace registration.
 
 ```jsonc
 {
@@ -49,7 +49,9 @@ Transforms a dev container into a P-System membrane with evolution rules, commun
             "membraneId": "cognitive-root",
             "enableScheme": true,
             "enableMonitoring": true,
-            "communicationMode": "shared-volume"
+            "communicationMode": "shared-volume",
+            "enableNamespace": true,
+            "autoRegister": true
         }
     }
 }
@@ -61,6 +63,8 @@ Transforms a dev container into a P-System membrane with evolution rules, commun
 - 🐣 Scheme-based hypergraph representation
 - 📊 Real-time monitoring and event logging
 - 🌳 Hierarchical membrane nesting
+- 🔍 **Distributed namespace registration and discovery**
+- 🌐 **Dynamic membrane communication without static configuration**
 
 ### 🎼 `orchestrator` - Membrane Hierarchy Management
 
@@ -348,6 +352,13 @@ membrane status                 # Show membrane state
 membrane send <target> <msg>    # Send message
 membrane log                    # View communication logs
 membrane scheme                 # Enter Scheme REPL
+
+# Namespace commands
+membrane register [parent]      # Register with namespace
+membrane discover <membrane_id> # Discover membrane by ID
+membrane list                   # List all membranes
+membrane registry start         # Start namespace registry
+membrane registry status        # Check registry status
 
 # Orchestrator commands  
 orchestrator generate <json>    # Generate configuration
